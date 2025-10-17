@@ -1,14 +1,12 @@
-import FeaturedCategories from "@/components/FeaturedCategories";
-import HeroSlider from "@/components/HeroSlider";
-import HomeBottomInfo from "@/components/HomeBottomInfo";
-import RecommendedProducts from "@/components/RecommendedProducts";
 import { colors } from "@/styles/colors";
-import { StatusBar } from "expo-status-bar";
 import React from "react";
+
+import BestSellingProducts from "@/components/BestSellingProducts";
+import { StatusBar } from "expo-status-bar";
 import { ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function HomePage() {
+export default function ProductsPage() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar style="dark" />
@@ -16,10 +14,7 @@ export default function HomePage() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <HeroSlider />
-        <FeaturedCategories />
-        <RecommendedProducts />
-        <HomeBottomInfo />
+        <BestSellingProducts></BestSellingProducts>
       </ScrollView>
     </SafeAreaView>
   );
@@ -29,6 +24,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  text: {
+    fontSize: 18,
+    color: colors.text,
   },
   scrollView: {
     flex: 1,
