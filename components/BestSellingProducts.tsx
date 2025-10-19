@@ -1,17 +1,11 @@
+import { useResponsive } from "@/hooks/useResponsive"; // Adjust the import path as needed
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import React from "react";
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 // Define the Product type
 type Product = {
@@ -61,12 +55,13 @@ const tabs = [
 
 export default function BestSellingProducts() {
   const products = getProducts();
-  const { width } = useWindowDimensions();
+  const { width, isSmallDevice, isMediumDevice, isLargeDevice, isTablet } =
+    useResponsive();
 
-  // Calculate number of columns based on screen width
+  // Calculate number of columns based on screen size using responsive hook
   const getColumnsCount = () => {
     if (width >= 1200) return 4; // Large screens (tablets, desktop)
-    if (width >= 768) return 3; // Medium screens (tablets)
+    if (isTablet || width >= 768) return 3; // Medium screens (tablets)
     if (width >= 480) return 2; // Small tablets
     return 1; // Mobile phones
   };
@@ -166,9 +161,10 @@ export default function BestSellingProducts() {
 
 // Separate component for scrollable tabs on small screens
 const ScrollableTabs = () => {
-  const { width } = useWindowDimensions();
+  const { isTablet } = useResponsive();
 
-  if (width < 768) {
+  // Use isTablet instead of checking width directly
+  if (!isTablet) {
     return (
       <FlatList
         horizontal
@@ -205,7 +201,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    width: "90%",
+    width: "95%",
     paddingHorizontal: spacing.lg,
     marginTop: spacing.lg,
     flexWrap: "wrap",
@@ -213,7 +209,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   cardsContainer: {
-    width: "90%",
+    width: "95%",
     alignSelf: "center",
     padding: spacing.lg,
   },

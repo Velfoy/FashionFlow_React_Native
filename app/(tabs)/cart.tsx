@@ -1,4 +1,6 @@
-// import HeaderNav from "@/components/HeaderNav";
+// app/(tabs)/cart.tsx - FULLY RESPONSIVE VERSION
+import HeaderNav from "@/components/HeaderNav";
+import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Ionicons } from "@expo/vector-icons";
@@ -51,6 +53,8 @@ const sellers = [
 ];
 
 export default function CartPage() {
+  const { isTablet, isLandscape, width } = useResponsive();
+
   const [checkedState, setCheckedState] = useState(() =>
     sellers.map((seller) => ({
       sellerId: seller.id,
@@ -136,17 +140,40 @@ export default function CartPage() {
     );
   };
 
+  // Determine layout based on device
+  // Phone always uses stacked layout for better visibility
+  const useSideBySideLayout = false; // Changed to always use stacked layout
+  const cartMainFlex = 1;
+  const orderSummaryFlex = 1;
+
   return (
     <View style={styles.container}>
-      {/* <HeaderNav /> */}
-      <ScrollView style={styles.scrollView}>
+      <HeaderNav showLogo={false} title="Shopping Cart" showAccount={false} />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isTablet && styles.scrollContentTablet,
+        ]}
+      >
         <Text style={styles.breadcrumb}>
           Cart &gt; Place order &gt; Pay &gt; Order Completed
         </Text>
 
         {!checkoutComplete ? (
-          <View style={styles.cartAll}>
-            <View style={styles.cartMain}>
+          <View
+            style={[
+              styles.cartAll,
+              useSideBySideLayout && styles.cartAllSideBySide,
+              !useSideBySideLayout && styles.cartAllStacked,
+            ]}
+          >
+            <View
+              style={[
+                styles.cartMain,
+                useSideBySideLayout && { flex: cartMainFlex },
+              ]}
+            >
               {/* All items header */}
               <View style={styles.allItemsHeader}>
                 <Pressable
@@ -179,7 +206,6 @@ export default function CartPage() {
                   (s) => s.id === sellerState.sellerId
                 );
 
-                // Add null check for seller
                 if (!seller) return null;
 
                 return (
@@ -212,7 +238,13 @@ export default function CartPage() {
                         (p) => p.productId === product.id
                       );
                       return (
-                        <View key={product.id} style={styles.cartCard}>
+                        <View
+                          key={product.id}
+                          style={[
+                            styles.cartCard,
+                            isTablet && styles.cartCardTablet,
+                          ]}
+                        >
                           <Pressable
                             onPress={() =>
                               handleProductToggle(seller.id, product.id)
@@ -236,7 +268,10 @@ export default function CartPage() {
                           </Pressable>
                           <Image
                             source={{ uri: product.image }}
-                            style={styles.productImage}
+                            style={[
+                              styles.productImage,
+                              isTablet && styles.productImageTablet,
+                            ]}
                             contentFit="cover"
                           />
                           <Pressable
@@ -248,14 +283,24 @@ export default function CartPage() {
                               })
                             }
                           >
-                            <Text style={styles.productTitle}>
+                            <Text
+                              style={[
+                                styles.productTitle,
+                                isTablet && styles.productTitleTablet,
+                              ]}
+                            >
                               {product.name}
                             </Text>
                             <Text style={styles.productDesc}>
                               Lorem ipsum lorem ipsum lorem ipsum lorem ipsum
                             </Text>
                             <View style={styles.priceContainer}>
-                              <Text style={styles.productPrice}>
+                              <Text
+                                style={[
+                                  styles.productPrice,
+                                  isTablet && styles.productPriceTablet,
+                                ]}
+                              >
                                 ${product.price.toFixed(2)}
                               </Text>
                               <Text style={styles.oldPrice}>
@@ -266,7 +311,7 @@ export default function CartPage() {
                           <Pressable style={styles.deleteButton}>
                             <Ionicons
                               name="trash-outline"
-                              size={18}
+                              size={isTablet ? 22 : 18}
                               color={colors.gray}
                             />
                           </Pressable>
@@ -279,7 +324,13 @@ export default function CartPage() {
             </View>
 
             {/* Order Summary */}
-            <View style={styles.orderSummary}>
+            <View
+              style={[
+                styles.orderSummary,
+                useSideBySideLayout && { flex: orderSummaryFlex },
+                !useSideBySideLayout && styles.orderSummaryStacked,
+              ]}
+            >
               <Text style={styles.summaryTitle}>Order Summary</Text>
               <View style={styles.previewImages}>
                 {sellers
@@ -355,12 +406,28 @@ export default function CartPage() {
           </View>
         ) : (
           /* Checkout Complete View */
-          <View style={styles.cartAll}>
-            <View style={styles.cartMain}>
+          <View
+            style={[
+              styles.cartAll,
+              useSideBySideLayout && styles.cartAllSideBySide,
+              !useSideBySideLayout && styles.cartAllStacked,
+            ]}
+          >
+            <View
+              style={[
+                styles.cartMain,
+                useSideBySideLayout && { flex: cartMainFlex },
+              ]}
+            >
               {/* Address Section */}
               <View style={[styles.sellerSection, styles.paddingCart]}>
                 <Text style={styles.acceptingText}>Pickup Address</Text>
-                <View style={styles.pickupAddress}>
+                <View
+                  style={[
+                    styles.pickupAddress,
+                    !useSideBySideLayout && styles.pickupAddressStacked,
+                  ]}
+                >
                   <View style={styles.addressInfo}>
                     {isEditing ? (
                       <>
@@ -408,7 +475,7 @@ export default function CartPage() {
                     onPress={() => setIsEditing(!isEditing)}
                   >
                     <Text style={styles.editAddressText}>
-                      {isEditing ? "Save Address" : "Edit Address"}
+                      {isEditing ? "Save" : "Edit"}
                     </Text>
                   </Pressable>
                 </View>
@@ -431,7 +498,7 @@ export default function CartPage() {
                         <View style={styles.radioInner} />
                       )}
                     </View>
-                    <View>
+                    <View style={styles.shippingInfo}>
                       <Text style={styles.shippingName}>
                         InPost Paczkomat 24/7
                       </Text>
@@ -445,8 +512,14 @@ export default function CartPage() {
               </View>
             </View>
 
-            {/* Same Order Summary */}
-            <View style={styles.orderSummary}>
+            {/* Order Summary - Checkout */}
+            <View
+              style={[
+                styles.orderSummary,
+                useSideBySideLayout && { flex: orderSummaryFlex },
+                !useSideBySideLayout && styles.orderSummaryStacked,
+              ]}
+            >
               <Text style={styles.summaryTitle}>Order Summary</Text>
               <View style={styles.summaryDetails}>
                 <View style={styles.summaryRow}>
@@ -483,20 +556,32 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: spacing.xl,
+  },
+  scrollContentTablet: {
+    paddingHorizontal: spacing.xl,
+  },
   breadcrumb: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     textAlign: "center",
     marginVertical: spacing.md,
     color: colors.text,
   },
   cartAll: {
+    paddingHorizontal: spacing.md,
+  },
+  cartAllSideBySide: {
     flexDirection: "row",
-    paddingHorizontal: spacing.lg,
+    gap: spacing.xl,
+  },
+  cartAllStacked: {
+    flexDirection: "column",
     gap: spacing.lg,
   },
   cartMain: {
-    flex: 2,
+    flex: 1,
   },
   allItemsHeader: {
     flexDirection: "row",
@@ -553,6 +638,9 @@ const styles = StyleSheet.create({
     borderColor: colors.borderLight,
     marginBottom: spacing.sm,
   },
+  cartCardTablet: {
+    padding: spacing.md,
+  },
   checkboxContainer: {
     marginRight: spacing.sm,
   },
@@ -575,6 +663,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: spacing.md,
   },
+  productImageTablet: {
+    width: 100,
+    height: 100,
+  },
   productInfo: {
     flex: 1,
   },
@@ -583,6 +675,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: spacing.xs,
     color: colors.text,
+  },
+  productTitleTablet: {
+    fontSize: 16,
   },
   productDesc: {
     fontSize: 12,
@@ -598,6 +693,9 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.black,
   },
+  productPriceTablet: {
+    fontSize: 18,
+  },
   oldPrice: {
     fontSize: 12,
     textDecorationLine: "line-through",
@@ -608,7 +706,6 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   orderSummary: {
-    flex: 1,
     backgroundColor: colors.white,
     borderRadius: 15,
     padding: spacing.lg,
@@ -619,7 +716,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
-    height: "50%",
+  },
+  orderSummaryStacked: {
+    marginTop: spacing.lg,
   },
   summaryTitle: {
     fontSize: 18,
@@ -631,6 +730,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.sm,
     marginBottom: spacing.md,
+    flexWrap: "wrap",
   },
   previewWrapper: {
     width: 75,
@@ -726,6 +826,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.sm,
     marginTop: spacing.sm,
+    flexWrap: "wrap",
   },
   payIcon: {
     height: 24,
@@ -742,6 +843,11 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 1,
     borderColor: colors.border,
+    alignItems: "flex-start",
+  },
+  pickupAddressStacked: {
+    flexDirection: "column",
+    gap: spacing.md,
   },
   addressInfo: {
     flex: 1,
@@ -798,12 +904,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: spacing.sm,
+    marginTop: 2,
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: colors.black,
+  },
+  shippingInfo: {
+    flex: 1,
   },
   shippingName: {
     fontSize: 14,

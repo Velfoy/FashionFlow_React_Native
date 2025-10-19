@@ -1,7 +1,7 @@
 import { colors } from "@/styles/colors";
 import React from "react";
 
-import BestSellingProducts from "@/components/BestSellingProducts";
+import SearchBar from "@/components/SearchBar";
 import { StatusBar } from "expo-status-bar";
 import { ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,7 +14,9 @@ export default function ProductsPage() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <BestSellingProducts></BestSellingProducts>
+        <SearchBar showResults={true} />
+        {/* 
+        <BestSellingProducts></BestSellingProducts> */}
       </ScrollView>
     </SafeAreaView>
   );

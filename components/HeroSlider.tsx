@@ -1,9 +1,9 @@
+import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Image } from "expo-image";
 import React, { useRef, useState } from "react";
 import {
-  Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -13,8 +13,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-
-const { width } = Dimensions.get("window");
 
 const slides = [
   {
@@ -46,15 +44,56 @@ const slides = [
 export default function HeroSlider() {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+  const { width, isSmallDevice, isTablet, isLargeDevice } = useResponsive();
+
+  // Responsive dimensions
+  const getSliderDimensions = () => {
+    if (isLargeDevice) return { height: 450, width: width * 0.91 };
+    if (isTablet) return { height: 400, width: width * 0.91 };
+    if (isSmallDevice) return { height: 300, width: width * 0.91 };
+    return { height: 350, width: width * 0.91 }; // medium devices
+  };
+
+  const sliderDimensions = getSliderDimensions();
+  const slideWidth = sliderDimensions.width;
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
-    const index = Math.round(scrollPosition / (width * 0.91));
+    const index = Math.round(scrollPosition / slideWidth);
     setActiveIndex(index);
   };
 
+  // Responsive typography
+  const getTitleSize = () => {
+    if (isLargeDevice) return 36;
+    if (isTablet) return 32;
+    if (isSmallDevice) return 24;
+    return 28;
+  };
+
+  const getSubtitleSize = () => {
+    if (isSmallDevice) return 14;
+    return 16;
+  };
+
+  // Responsive layout
+  const getContentLayout = () => {
+    if (isSmallDevice) {
+      return {
+        left: spacing.lg,
+        maxWidth: width * 0.7,
+      };
+    }
+    return {
+      left: spacing.xl,
+      maxWidth: 350,
+    };
+  };
+
+  const contentLayout = getContentLayout();
+
   return (
-    <View style={styles.heroSlider}>
+    <View style={[styles.heroSlider, { height: sliderDimensions.height }]}>
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -64,24 +103,44 @@ export default function HeroSlider() {
         scrollEventThrottle={16}
       >
         {slides.map((slide, index) => (
-          <View key={index} style={styles.slide}>
+          <View key={index} style={[styles.slide, { width: slideWidth }]}>
             <Image
               source={{ uri: slide.image }}
               style={styles.slideBackground}
               contentFit="cover"
             />
             <View style={styles.overlay} />
-            <View style={styles.slideContent}>
-              <Text style={styles.slideTitle}>{slide.title}</Text>
-              <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
-              <View style={styles.emailInput}>
+            <View style={[styles.slideContent, contentLayout]}>
+              <Text style={[styles.slideTitle, { fontSize: getTitleSize() }]}>
+                {slide.title}
+              </Text>
+              <Text
+                style={[styles.slideSubtitle, { fontSize: getSubtitleSize() }]}
+              >
+                {slide.subtitle}
+              </Text>
+              <View
+                style={[
+                  styles.emailInput,
+                  isSmallDevice && styles.emailInputSmall,
+                ]}
+              >
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, isSmallDevice && styles.inputSmall]}
                   placeholder={slide.placeholder}
                   placeholderTextColor={colors.textSecondary}
                 />
-                <Pressable style={styles.button}>
-                  <Text style={styles.buttonText}>{slide.buttonText}</Text>
+                <Pressable
+                  style={[styles.button, isSmallDevice && styles.buttonSmall]}
+                >
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      isSmallDevice && styles.buttonTextSmall,
+                    ]}
+                  >
+                    {slide.buttonText}
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -95,7 +154,7 @@ export default function HeroSlider() {
             key={index}
             onPress={() => {
               scrollViewRef.current?.scrollTo({
-                x: index * (width * 0.91),
+                x: index * slideWidth,
                 animated: true,
               });
               setActiveIndex(index);
@@ -119,7 +178,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginTop: spacing.sm,
     marginBottom: spacing.lg,
-    height: 400,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
@@ -127,8 +185,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   slide: {
-    width: width * 0.91,
-    height: 400,
+    height: "100%",
     position: "relative",
   },
   slideBackground: {
@@ -146,21 +203,17 @@ const styles = StyleSheet.create({
   },
   slideContent: {
     position: "absolute",
-    left: spacing.xl,
     justifyContent: "center",
     height: "100%",
-    maxWidth: 350,
     zIndex: 1,
   },
   slideTitle: {
-    fontSize: 32,
     fontWeight: "700",
     color: colors.white,
     marginBottom: spacing.sm,
     lineHeight: 38,
   },
   slideSubtitle: {
-    fontSize: 16,
     color: colors.white,
     marginBottom: spacing.lg,
     opacity: 0.9,
@@ -177,6 +230,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  emailInputSmall: {
+    flexDirection: "column",
+    borderRadius: 15,
+  },
   input: {
     flex: 1,
     paddingHorizontal: spacing.lg,
@@ -184,16 +241,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
+  inputSmall: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 12,
+  },
   button: {
     backgroundColor: colors.black,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     justifyContent: "center",
   },
+  buttonSmall: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
   buttonText: {
     color: colors.white,
     fontSize: 14,
     fontWeight: "600",
+  },
+  buttonTextSmall: {
+    fontSize: 12,
   },
   pagination: {
     flexDirection: "row",

@@ -1,3 +1,6 @@
+// app/product/[id].tsx - FULLY RESPONSIVE VERSION
+import HeaderNav from "@/components/HeaderNav";
+import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Ionicons } from "@expo/vector-icons";
@@ -5,7 +8,6 @@ import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-  Dimensions,
   Modal,
   Pressable,
   ScrollView,
@@ -15,14 +17,12 @@ import {
   View,
 } from "react-native";
 
-const { width } = Dimensions.get("window");
-
 const images = [
-  "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=500&h=500&fit=crop", // Clock 1
-  "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=500&h=500&fit=crop", // Clock 2
-  "https://images.unsplash.com/photo-1546587348-d12660c30c50?w=500&h=500&fit=crop", // Clock 3
-  "https://images.unsplash.com/photo-1499364786053-c25f0d1e039f?w=500&h=500&fit=crop", // Clock 4
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop", // Clock 5
+  "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=500&h=500&fit=crop",
+  "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=500&h=500&fit=crop",
+  "https://images.unsplash.com/photo-1546587348-d12660c30c50?w=500&h=500&fit=crop",
+  "https://images.unsplash.com/photo-1499364786053-c25f0d1e039f?w=500&h=500&fit=crop",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop",
 ];
 
 const reviews = Array(11).fill({
@@ -34,6 +34,8 @@ const reviews = Array(11).fill({
 
 export default function ProductDetailPage() {
   const { id } = useLocalSearchParams();
+  const { isTablet, isLandscape, width: screenWidth } = useResponsive();
+
   const [selectedSize, setSelectedSize] = useState("S");
   const [quantity, setQuantity] = useState(1);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -54,27 +56,111 @@ export default function ProductDetailPage() {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   };
 
+  // Responsive image sizes
+  const smallImageSize = isTablet ? 100 : 80;
+  const bigImageWidth = isLandscape
+    ? isTablet
+      ? screenWidth * 0.35
+      : screenWidth * 0.45
+    : isTablet
+    ? screenWidth * 0.5
+    : screenWidth * 0.9;
+  const bigImageHeight = isLandscape
+    ? isTablet
+      ? 400
+      : 300
+    : isTablet
+    ? 500
+    : 400;
+
+  // Layout direction based on orientation
+  const useVerticalLayout = !isLandscape || !isTablet;
+
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Top Details */}
-        <View style={styles.topDetails}>
-          {/* Images */}
-          <View style={styles.detailsImages}>
-            <View style={styles.leftImages}>
+      <HeaderNav showLogo={false} showBack={true} title="Product Details" />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={
+          isLandscape && !isTablet && { paddingBottom: spacing.xl }
+        } // ADD THIS
+      >
+        {/* Top Details - Responsive Layout */}
+        <View
+          style={[
+            styles.topDetails,
+            useVerticalLayout && styles.topDetailsVertical,
+            isLandscape && styles.topDetailsLandscape,
+            isTablet && styles.topDetailsTablet,
+          ]}
+        >
+          {/* Images Section */}
+          <View
+            style={[
+              styles.detailsImages,
+              useVerticalLayout && styles.detailsImagesVertical,
+              isLandscape && !isTablet && styles.detailsImagesLandscapePhone, // NEW
+            ]}
+          >
+            {/* Small Images */}
+            <ScrollView
+              horizontal={useVerticalLayout}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              style={[
+                styles.leftImages,
+                useVerticalLayout && styles.leftImagesHorizontal,
+                isLandscape && !isTablet && styles.leftImagesLandscapePhone, // NEW
+              ]}
+              contentContainerStyle={
+                useVerticalLayout && styles.leftImagesContent
+              }
+            >
               {images.slice(1).map((img, index) => (
                 <Pressable key={index} onPress={() => openPopup(index + 1)}>
-                  <Image source={img} style={styles.imageStandard} />
+                  <Image
+                    source={img}
+                    style={[
+                      styles.imageStandard,
+                      {
+                        width: smallImageSize,
+                        height: smallImageSize,
+                      },
+                      isLandscape &&
+                        !isTablet &&
+                        styles.imageStandardLandscapePhone, // NEW
+                    ]}
+                  />
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
+
+            {/* Big Image */}
             <Pressable onPress={() => openPopup(0)}>
-              <Image source={images[0]} style={styles.rightBigImage} />
+              <Image
+                source={images[0]}
+                style={[
+                  styles.rightBigImage,
+                  {
+                    width: bigImageWidth,
+                    height: bigImageHeight,
+                  },
+                  isLandscape &&
+                    !isTablet &&
+                    styles.rightBigImageLandscapePhone, // NEW
+                ]}
+              />
             </Pressable>
           </View>
 
-          {/* Cart Details */}
-          <View style={styles.cartDetails}>
+          {/* Cart Details - UPDATED for better landscape phone visibility */}
+          <View
+            style={[
+              styles.cartDetails,
+              isLandscape && !isTablet && styles.cartDetailsLandscapePhone,
+              isLandscape && isTablet && styles.cartDetailsLandscapeTablet,
+            ]}
+          >
             <View style={styles.cartInfo}>
               <View style={styles.cartRating}>
                 <Text style={styles.ratingStar}>⭐ 4.9 - </Text>
@@ -88,6 +174,7 @@ export default function ProductDetailPage() {
 
             <Text style={styles.sizeChosen}>Size: {selectedSize}</Text>
 
+            {/* Size Selection - Responsive */}
             <View style={styles.sizeDivChoose}>
               {["S", "M", "L", "XL", "2XL"].map((size) => (
                 <Pressable
@@ -95,6 +182,7 @@ export default function ProductDetailPage() {
                   style={[
                     styles.size,
                     selectedSize === size && styles.sizeActive,
+                    isTablet && styles.sizeTablet,
                   ]}
                   onPress={() => setSelectedSize(size)}
                 >
@@ -110,7 +198,13 @@ export default function ProductDetailPage() {
               ))}
             </View>
 
-            <View style={styles.addToCart}>
+            {/* Add to Cart - Responsive */}
+            <View
+              style={[
+                styles.addToCart,
+                isLandscape && !isTablet && styles.addToCartLandscape,
+              ]}
+            >
               <View style={styles.amountToAdd}>
                 <Pressable
                   style={styles.amountButton}
@@ -126,12 +220,18 @@ export default function ProductDetailPage() {
                   <Text style={styles.amountButtonText}>+</Text>
                 </Pressable>
               </View>
-              <Pressable style={styles.addToCartButton}>
+              <Pressable
+                style={[
+                  styles.addToCartButton,
+                  isLandscape && !isTablet && styles.addToCartButtonCompact,
+                ]}
+              >
                 <Ionicons name="cart-outline" size={16} color={colors.white} />
                 <Text style={styles.addToCartButtonText}>Add to cart</Text>
               </Pressable>
             </View>
 
+            {/* Price Summary */}
             <View style={styles.priceAll}>
               <View style={styles.priceRow}>
                 <Text style={styles.priceLabel}>$2499.00</Text>
@@ -153,12 +253,20 @@ export default function ProductDetailPage() {
           </View>
         </View>
 
-        {/* Second Details */}
-        <View style={styles.secondDetails}>
-          <Text style={styles.productTitle}>Black watch Omega yg87JF</Text>
+        {/* Second Details - Responsive padding */}
+        <View
+          style={[styles.secondDetails, isTablet && styles.secondDetailsTablet]}
+        >
+          <Text
+            style={[styles.productTitle, isTablet && styles.productTitleTablet]}
+          >
+            Black watch Omega yg87JF
+          </Text>
           <Text style={styles.productDescription}>
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut
-            imperdiet finibus...
+            imperdiet finibus...Lorem ipsum dolor sit amet, consectetur
+            adipiscing elit. Ut imperdiet finibus...Lorem ipsum dolor sit amet,
+            consectetur adipiscing elit.
           </Text>
 
           <Text style={styles.sectionTitle}>Details</Text>
@@ -191,9 +299,19 @@ export default function ProductDetailPage() {
           </View>
         </View>
 
-        {/* Comments Section */}
-        <View style={styles.commentsSection}>
-          <View style={styles.commentsHeader}>
+        {/* Comments Section - Responsive */}
+        <View
+          style={[
+            styles.commentsSection,
+            isTablet && styles.commentsSectionTablet,
+          ]}
+        >
+          <View
+            style={[
+              styles.commentsHeader,
+              isLandscape && !isTablet && styles.commentsHeaderCompact,
+            ]}
+          >
             <View>
               <Text style={styles.commentsTitle}>Customer reviews</Text>
               <Text style={styles.commentsRating}>
@@ -217,7 +335,7 @@ export default function ProductDetailPage() {
           />
 
           <Text style={styles.reviewsTitle}>{reviews.length} reviews</Text>
-          {reviews.map((review, i) => (
+          {reviews.slice(0, isTablet ? 11 : 5).map((review, i) => (
             <View key={i} style={styles.commentItem}>
               <Image
                 source="https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=500&h=500&fit=crop"
@@ -257,7 +375,9 @@ export default function ProductDetailPage() {
           ))}
 
           <Pressable style={styles.loadMoreButton}>
-            <Text style={styles.loadMoreButtonText}>Więcej</Text>
+            <Text style={styles.loadMoreButtonText}>
+              {isTablet ? "Load More Reviews" : "Więcej"}
+            </Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -279,7 +399,16 @@ export default function ProductDetailPage() {
             <Text style={styles.popupArrowText}>❮</Text>
           </Pressable>
 
-          <Image source={images[currentImageIndex]} style={styles.popupImage} />
+          <Image
+            source={images[currentImageIndex]}
+            style={[
+              styles.popupImage,
+              {
+                width: screenWidth * 0.9,
+                height: screenWidth * 0.9,
+              },
+            ]}
+          />
 
           <Pressable
             style={[styles.popupArrow, styles.popupArrowRight]}
@@ -302,36 +431,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  // TOP DETAILS - RESPONSIVE
   topDetails: {
-    flexDirection: "row",
+    flexDirection: "column",
     padding: spacing.md,
     gap: spacing.lg,
   },
+  topDetailsVertical: {
+    flexDirection: "column",
+  },
+  topDetailsLandscape: {
+    flexDirection: "row",
+    paddingHorizontal: spacing.xl,
+  },
+  topDetailsTablet: {
+    paddingHorizontal: spacing.xxl,
+  },
+  // IMAGES SECTION - RESPONSIVE
   detailsImages: {
     flexDirection: "row",
-    gap: spacing.lg,
+    gap: spacing.md,
+    alignItems: "center",
+  },
+  detailsImagesVertical: {
+    flexDirection: "column-reverse", // Big image on top, small images below
   },
   leftImages: {
     flexDirection: "column",
     gap: spacing.md,
   },
+  leftImagesHorizontal: {
+    flexDirection: "row",
+  },
+  leftImagesContent: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
   imageStandard: {
-    width: 115,
-    height: 115,
     borderRadius: 10,
     borderWidth: 2,
     borderColor: "transparent",
   },
   rightBigImage: {
-    width: 400,
-    height: 500,
     borderRadius: 15,
   },
+  // CART DETAILS - RESPONSIVE
   cartDetails: {
-    flex: 1,
     backgroundColor: colors.white,
     borderRadius: 18,
-    padding: spacing.xl,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.borderLight,
     shadowColor: "#000",
@@ -340,11 +488,20 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 6,
   },
+  cartDetailsLandscapePhone: {
+    flex: 1,
+    padding: spacing.md,
+  },
+  cartDetailsLandscapeTablet: {
+    flex: 1,
+    padding: spacing.xl,
+  },
   cartInfo: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
+    flexWrap: "wrap",
   },
   cartRating: {
     flexDirection: "row",
@@ -400,6 +557,10 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  sizeTablet: {
+    width: 55,
+    height: 55,
+  },
   sizeActive: {
     backgroundColor: colors.black,
     borderColor: colors.black,
@@ -416,6 +577,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md,
     marginBottom: spacing.lg,
+  },
+  addToCartLandscape: {
+    flexDirection: "column",
+    gap: spacing.sm,
   },
   amountToAdd: {
     flexDirection: "row",
@@ -458,6 +623,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
   },
+  addToCartButtonCompact: {
+    flex: 0,
+    paddingHorizontal: spacing.lg,
+  },
   addToCartButtonText: {
     color: colors.white,
     fontSize: 14,
@@ -492,13 +661,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+  // SECOND DETAILS - RESPONSIVE
   secondDetails: {
     padding: spacing.lg,
   },
+  secondDetailsTablet: {
+    paddingHorizontal: spacing.xxl,
+  },
   productTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "800",
     marginBottom: spacing.md,
+  },
+  productTitleTablet: {
+    fontSize: 36,
   },
   productDescription: {
     fontSize: 16,
@@ -536,14 +712,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
   },
+  // COMMENTS SECTION - RESPONSIVE
   commentsSection: {
     padding: spacing.lg,
+  },
+  commentsSectionTablet: {
+    paddingHorizontal: spacing.xxl,
   },
   commentsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: spacing.md,
+    gap: spacing.md,
+  },
+  commentsHeaderCompact: {
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   commentsTitle: {
     fontSize: 22,
@@ -559,7 +744,7 @@ const styles = StyleSheet.create({
   addCommentButton: {
     backgroundColor: colors.black,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     borderRadius: 24,
   },
   addCommentButtonText: {
@@ -656,6 +841,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+  // IMAGE POPUP - RESPONSIVE
   imagePopupOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.92)",
@@ -663,8 +849,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   popupImage: {
-    width: width * 0.9,
-    height: width * 0.9,
     borderRadius: 12,
   },
   popupClose: {
@@ -699,4 +883,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  detailsImagesLandscapePhone: {
+    maxHeight: 250, // Limit height to ensure cart is visible
+    marginBottom: spacing.sm,
+  },
+  leftImagesLandscapePhone: {
+    maxHeight: 200,
+  },
+  imageStandardLandscapePhone: {
+    width: 60, // Smaller thumbnails in landscape phone
+    height: 60,
+  },
+  rightBigImageLandscapePhone: {
+    maxHeight: 200, // Limit big image height
+  },
+
+  // // ENHANCE EXISTING LANDSCAPE PHONE STYLES
+  // cartDetailsLandscapePhone: {
+  //   flex: 1,
+  //   padding: spacing.md,
+  //   maxHeight: 380, // Ensure it doesn't overflow
+  //   marginTop: spacing.sm,
+  // },
+
+  // // IMPROVE TOP CONTAINER FOR LANDSCAPE
+  // topDetailsLandscape: {
+  //   flexDirection: "row",
+  //   paddingHorizontal: spacing.xl,
+  //   alignItems: "flex-start", // Align items to top
+  // },
+
+  // // ENSURE SCROLLVIEW WORKS PROPERLY
+  // container: {
+  //   flex: 1,
+  //   backgroundColor: colors.background,
+  // },
 });

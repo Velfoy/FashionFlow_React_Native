@@ -1,3 +1,4 @@
+import { useResponsive } from "@/hooks/useResponsive"; // Adjust the import path as needed
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Image } from "expo-image";
@@ -68,11 +69,59 @@ const categories = [
 ];
 
 export default function FeaturedCategories() {
+  const { width, isSmallDevice, isTablet, isLargeDevice } = useResponsive();
+
+  // Responsive card size calculation
+  const getCardSize = () => {
+    if (isLargeDevice) return { width: 120, imageSize: 50 };
+    if (isTablet) return { width: 110, imageSize: 45 };
+    if (isSmallDevice) return { width: 85, imageSize: 35 };
+    return { width: 100, imageSize: 40 }; // default for medium devices
+  };
+
+  const cardSize = getCardSize();
+
   return (
     <View style={styles.featuredContainer}>
-      <View style={styles.featuredHeader}>
-        <Text style={styles.headerTitle}>Featured Categories</Text>
-        <View style={styles.featuredTabs}>
+      <View
+        style={[
+          styles.featuredHeader,
+          isSmallDevice && styles.featuredHeaderSmall,
+        ]}
+      >
+        <Text
+          style={[styles.headerTitle, isSmallDevice && styles.headerTitleSmall]}
+        >
+          Featured Categories
+        </Text>
+
+        {/* Responsive tabs - hide on small devices */}
+        {!isSmallDevice && (
+          <View style={styles.featuredTabs}>
+            <Pressable style={styles.activeTab}>
+              <Text style={styles.activeTabText}>Hats</Text>
+            </Pressable>
+            <Pressable style={styles.tab}>
+              <Text style={styles.tabText}>Shoes</Text>
+            </Pressable>
+            <Pressable style={styles.tab}>
+              <Text style={styles.tabText}>T-shirts</Text>
+            </Pressable>
+            <Pressable style={styles.tab}>
+              <Text style={styles.tabText}>Pants</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+
+      {/* Show tabs below header on small devices */}
+      {isSmallDevice && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsScroll}
+          style={styles.tabsScrollContainer}
+        >
           <Pressable style={styles.activeTab}>
             <Text style={styles.activeTabText}>Hats</Text>
           </Pressable>
@@ -85,23 +134,55 @@ export default function FeaturedCategories() {
           <Pressable style={styles.tab}>
             <Text style={styles.tabText}>Pants</Text>
           </Pressable>
-        </View>
-      </View>
+        </ScrollView>
+      )}
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.featuredScroll}
+        contentContainerStyle={[
+          styles.featuredScroll,
+          isLargeDevice && styles.featuredScrollLarge,
+        ]}
       >
         {categories.map((cat, index) => (
-          <View key={index} style={styles.featuredCard}>
+          <View
+            key={index}
+            style={[
+              styles.featuredCard,
+              {
+                minWidth: cardSize.width,
+                padding: isSmallDevice ? spacing.md : spacing.lg,
+              },
+            ]}
+          >
             <Image
               source={{ uri: cat.image }}
-              style={styles.categoryImage}
+              style={[
+                styles.categoryImage,
+                {
+                  width: cardSize.imageSize,
+                  height: cardSize.imageSize,
+                },
+              ]}
               contentFit="cover"
             />
-            <Text style={styles.categoryName}>{cat.name}</Text>
-            <Text style={styles.categoryItems}>{cat.items} Items</Text>
+            <Text
+              style={[
+                styles.categoryName,
+                isSmallDevice && styles.categoryNameSmall,
+              ]}
+            >
+              {cat.name}
+            </Text>
+            <Text
+              style={[
+                styles.categoryItems,
+                isSmallDevice && styles.categoryItemsSmall,
+              ]}
+            >
+              {cat.items} Items
+            </Text>
           </View>
         ))}
       </ScrollView>
@@ -121,13 +202,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: spacing.md,
   },
+  featuredHeaderSmall: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: spacing.md,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
   },
+  headerTitleSmall: {
+    fontSize: 20,
+  },
   featuredTabs: {
     flexDirection: "row",
     gap: spacing.md,
+  },
+  tabsScrollContainer: {
+    marginBottom: spacing.md,
+  },
+  tabsScroll: {
+    gap: spacing.md,
+    paddingHorizontal: spacing.xs,
   },
   activeTab: {
     paddingHorizontal: spacing.md,
@@ -153,11 +249,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     gap: spacing.lg,
   },
+  featuredScrollLarge: {
+    gap: spacing.xl,
+  },
   featuredCard: {
-    minWidth: 90,
     backgroundColor: colors.white,
     borderRadius: 15,
-    padding: spacing.lg,
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#F4F6FA",
@@ -168,8 +265,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   categoryImage: {
-    width: 40,
-    height: 40,
     marginBottom: spacing.sm,
     borderRadius: 8,
   },
@@ -179,9 +274,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     textAlign: "center",
   },
+  categoryNameSmall: {
+    fontSize: 14,
+  },
   categoryItems: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: "center",
+  },
+  categoryItemsSmall: {
+    fontSize: 12,
   },
 });

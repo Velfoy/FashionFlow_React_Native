@@ -1,3 +1,4 @@
+import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Image } from "expo-image";
@@ -33,9 +34,14 @@ const features = [
 ];
 
 export default function HomeBottomInfo() {
+  const { width } = useResponsive();
+
+  // Use width-based logic for reliable responsive behavior
+  const isMobile = width < 768;
+
   return (
     <View style={styles.heroContainer}>
-      <View style={styles.heroBanner}>
+      <View style={[styles.heroBanner, { height: isMobile ? 250 : 300 }]}>
         <Image
           source={{
             uri: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop&auto=format",
@@ -44,30 +50,54 @@ export default function HomeBottomInfo() {
           contentFit="cover"
         />
         <View style={styles.overlay} />
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>
+        <View style={[styles.heroContent, isMobile && styles.heroContentSmall]}>
+          <Text style={[styles.heroTitle, { fontSize: isMobile ? 22 : 28 }]}>
             Stay home & update your style from our shop
           </Text>
-          <Text style={styles.heroSubtitle}>
+          <Text style={[styles.heroSubtitle, { fontSize: isMobile ? 14 : 16 }]}>
             Start Your Daily Shopping with{" "}
             <Text style={styles.highlight}>FashionFlow</Text>
           </Text>
-          <View style={styles.heroInputGroup}>
+          <View
+            style={[
+              styles.heroInputGroup,
+              isMobile && styles.heroInputGroupSmall,
+            ]}
+          >
             <TextInput
-              style={styles.heroInput}
+              style={[styles.heroInput, isMobile && styles.heroInputSmall]}
               placeholder="✉ Your email address"
               placeholderTextColor={colors.textSecondary}
             />
-            <Pressable style={styles.subscribeButton}>
-              <Text style={styles.subscribeButtonText}>Subscribe</Text>
+            <Pressable
+              style={[
+                styles.subscribeButton,
+                isMobile && styles.subscribeButtonSmall,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.subscribeButtonText,
+                  isMobile && styles.subscribeButtonTextSmall,
+                ]}
+              >
+                Subscribe
+              </Text>
             </Pressable>
           </View>
         </View>
       </View>
 
-      <View style={styles.featuresRow}>
+      {/* Features Section - Simple mobile/desktop toggle */}
+      <View style={isMobile ? styles.featuresColumn : styles.featuresRow}>
         {features.map((item, idx) => (
-          <View key={idx} style={styles.featureCard}>
+          <View
+            key={idx}
+            style={[
+              styles.featureCard,
+              isMobile ? styles.featureCardColumn : styles.featureCardRow,
+            ]}
+          >
             <Text style={styles.featureIcon}>{item.icon}</Text>
             <View style={styles.featureTexts}>
               <Text style={styles.featureTitle}>{item.title}</Text>
@@ -87,7 +117,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   heroBanner: {
-    height: 300,
     borderRadius: 25,
     overflow: "hidden",
     position: "relative",
@@ -119,15 +148,18 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     zIndex: 1,
   },
+  heroContentSmall: {
+    left: spacing.lg,
+    right: spacing.lg,
+    maxWidth: "100%",
+  },
   heroTitle: {
-    fontSize: 28,
     fontWeight: "700",
     color: colors.white,
     marginBottom: spacing.sm,
     lineHeight: 34,
   },
   heroSubtitle: {
-    fontSize: 16,
     color: colors.white,
     marginBottom: spacing.lg,
     opacity: 0.9,
@@ -148,6 +180,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  heroInputGroupSmall: {
+    flexDirection: "column",
+    borderRadius: 15,
+    maxWidth: "100%",
+  },
   heroInput: {
     flex: 1,
     paddingHorizontal: spacing.lg,
@@ -155,30 +192,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
+  heroInputSmall: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 14,
+  },
   subscribeButton: {
     backgroundColor: colors.black,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     justifyContent: "center",
   },
+  subscribeButtonSmall: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
   subscribeButtonText: {
     color: colors.white,
     fontSize: 14,
     fontWeight: "600",
   },
+  subscribeButtonTextSmall: {
+    fontSize: 14,
+  },
+  // Features Layout - Make the difference very clear
   featuresRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     gap: spacing.md,
   },
+  featuresColumn: {
+    flexDirection: "column",
+    gap: spacing.md,
+  },
   featureCard: {
-    flex: 1,
     backgroundColor: colors.white,
     borderRadius: 16,
     padding: spacing.md,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
     borderWidth: 1,
     borderColor: colors.borderLight,
     shadowColor: "#000",
@@ -186,6 +236,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  featureCardRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  featureCardColumn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    width: "100%", // This ensures full width on mobile
   },
   featureIcon: {
     fontSize: 24,
@@ -198,13 +260,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "700",
-    marginBottom: 2,
+    marginBottom: 4,
     color: colors.black,
   },
   featureSubtitle: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
     fontWeight: "500",
   },
