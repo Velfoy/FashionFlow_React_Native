@@ -1,28 +1,85 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  DimensionValue,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 interface LoginFormProps {
-  onToggleForm?: () => void;
+  onToggleForm: () => void;
 }
 
 export default function LoginForm({ onToggleForm }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { isSmallDevice, width } = useResponsive();
+  const { login, resetPassword } = useAuth();
 
-  // Calculate form width based on screen size
-  const getFormWidth = () => {
-    if (width < 400) return "95%"; // Very small phones
-    if (width < 768) return "100%"; // Phones and small tablets
-    if (width < 1024) return "70%"; // Tablets
-    return "50%"; // Large screens and desktop
+  const getFormWidth = (): DimensionValue => {
+    if (width < 400) return "95%";
+    if (width < 768) return "100%";
+    if (width < 1024) return "70%";
+    return "50%";
   };
 
   const formWidth = getFormWidth();
+
+  const handleLogin = async (): Promise<void> => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    setIsLoading(true);
+    const success = await login(email, password);
+    setIsLoading(false);
+
+    if (success) {
+      router.replace("/(tabs)/account" as any);
+    } else {
+      Alert.alert(
+        "Login Failed",
+        "No account found with this email and password. Please register first.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Register", onPress: onToggleForm },
+        ]
+      );
+    }
+  };
+
+  const handleForgotPassword = async (): Promise<void> => {
+    if (!email) {
+      Alert.alert("Error", "Please enter your email address first");
+      return;
+    }
+
+    setIsLoading(true);
+    const success = await resetPassword(email);
+    setIsLoading(false);
+
+    if (success) {
+      Alert.alert(
+        "Password Reset",
+        "If an account exists with this email, you will receive password reset instructions."
+      );
+    } else {
+      Alert.alert("Error", "Failed to send reset email. Please try again.");
+    }
+  };
 
   return (
     <View
@@ -39,12 +96,16 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
       <View style={styles.form}>
         <View style={styles.inputWrapper}>
           <Text style={[styles.label, isSmallDevice && styles.labelSmall]}>
-            Username
+            Email
           </Text>
           <TextInput
             style={[styles.inputField, isSmallDevice && styles.inputFieldSmall]}
-            placeholder="Enter username..."
+            placeholder="Enter your email..."
             placeholderTextColor={colors.textSecondary}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
           />
         </View>
 
@@ -61,6 +122,8 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
               placeholder="Enter password..."
               placeholderTextColor={colors.textSecondary}
               secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
             />
             <Pressable
               style={[
@@ -78,8 +141,18 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
           </View>
         </View>
 
+        <Pressable onPress={handleForgotPassword} style={styles.forgotPassword}>
+          <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
+        </Pressable>
+
         <Pressable
-          style={[styles.primaryBtn, isSmallDevice && styles.primaryBtnSmall]}
+          style={[
+            styles.primaryBtn,
+            isSmallDevice && styles.primaryBtnSmall,
+            isLoading && styles.disabledBtn,
+          ]}
+          onPress={handleLogin}
+          disabled={isLoading}
         >
           <Ionicons
             name="lock-closed"
@@ -89,12 +162,11 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
           <Text
             style={[styles.btnLabel, isSmallDevice && styles.btnLabelSmall]}
           >
-            Login
+            {isLoading ? "Logging in..." : "Login"}
           </Text>
         </Pressable>
       </View>
 
-      {/* Register Link - Use the parent's toggle function */}
       <View style={styles.registerSection}>
         <Text
           style={[
@@ -102,7 +174,7 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
             isSmallDevice && styles.registerTextSmall,
           ]}
         >
-          Need an account?
+          Don't have an account?
         </Text>
         <Pressable onPress={onToggleForm}>
           <Text
@@ -111,12 +183,11 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
               isSmallDevice && styles.registerLinkSmall,
             ]}
           >
-            Register
+            Register Now
           </Text>
         </Pressable>
       </View>
 
-      {/* Social Login - Only show on larger screens */}
       {!isSmallDevice && (
         <View style={styles.socialLogin}>
           <Pressable style={styles.googleBtn}>
@@ -146,9 +217,10 @@ export default function LoginForm({ onToggleForm }: LoginFormProps) {
   );
 }
 
+// ... keep the same styles ...
 const styles = StyleSheet.create({
   formSection: {
-    alignSelf: "center",
+    alignSelf: "center" as const,
     padding: spacing.xl,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -159,17 +231,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 4,
-    maxWidth: 500, // Maximum width to prevent it from getting too wide
-    minWidth: 300, // Minimum width to maintain usability
+    maxWidth: 500,
+    minWidth: 300,
   },
   formSectionSmall: {
     padding: spacing.lg,
-    maxWidth: "100%", // On small devices, allow full available width
+    maxWidth: "100%",
   },
   title: {
     fontSize: 28,
     fontWeight: "700",
-    textAlign: "center",
+    textAlign: "center" as const,
     marginBottom: spacing.lg,
     color: colors.black,
   },
@@ -193,7 +265,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   passwordContainer: {
-    position: "relative",
+    position: "relative" as const,
   },
   inputField: {
     width: "100%",
@@ -211,7 +283,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   toggleVisibility: {
-    position: "absolute",
+    position: "absolute" as const,
     right: 12,
     top: 12,
     padding: 4,
@@ -220,14 +292,23 @@ const styles = StyleSheet.create({
     right: 10,
     top: 10,
   },
+  forgotPassword: {
+    alignSelf: "flex-end",
+    marginTop: -spacing.xs,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: "500",
+  },
   primaryBtn: {
     backgroundColor: colors.black,
     borderRadius: 12,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     marginTop: spacing.sm,
     gap: spacing.sm,
     shadowColor: "#000",
@@ -235,6 +316,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  disabledBtn: {
+    opacity: 0.6,
   },
   primaryBtnSmall: {
     paddingVertical: spacing.sm,
@@ -248,9 +332,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   registerSection: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     marginTop: spacing.lg,
     gap: spacing.sm,
   },
@@ -278,9 +362,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     gap: spacing.md,
     borderWidth: 2,
     borderColor: colors.border,
@@ -295,9 +379,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     gap: spacing.md,
     borderWidth: 2,
     borderColor: colors.border,

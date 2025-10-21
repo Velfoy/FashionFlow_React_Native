@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     borderRadius: 15,
     maxWidth: "100%",
+    minHeight: 100, // Added minimum height for mobile
   },
   heroInput: {
     flex: 1,
@@ -191,21 +192,26 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     fontSize: 14,
     fontWeight: "500",
+    minHeight: 50, // Added minimum height for better touch area
   },
   heroInputSmall: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 14,
+    paddingVertical: spacing.md, // Increased vertical padding
+    fontSize: 14, // Slightly larger font for better readability
+    minHeight: 45, // Increased minimum height for mobile
+    textAlign: "left", // Center text for better appearance in column layout
   },
   subscribeButton: {
     backgroundColor: colors.black,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     justifyContent: "center",
+    minHeight: 50, // Added minimum height for better touch area
   },
   subscribeButtonSmall: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md, // Increased vertical padding
+    minHeight: 55, // Increased minimum height for mobile
   },
   subscribeButtonText: {
     color: colors.white,
@@ -213,7 +219,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   subscribeButtonTextSmall: {
-    fontSize: 14,
+    fontSize: 14, // Slightly larger font for mobile
+    fontWeight: "700",
   },
   // Features Layout - Make the difference very clear
   featuresRow: {

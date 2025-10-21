@@ -1,23 +1,16 @@
-import { Tabs } from "expo-router";
-import React from "react";
-
-import { HapticTab } from "@/components/common/haptic-tab";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { colors } from "@/styles/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
         headerShown: false,
-        tabBarButton: HapticTab,
         tabBarStyle: {
+          backgroundColor: colors.white,
           borderTopWidth: 1,
           borderTopColor: colors.border,
         },
@@ -27,7 +20,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ size, color }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
@@ -36,30 +29,18 @@ export default function TabLayout() {
         name="products"
         options={{
           title: "Products",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ size, color }) => (
             <Ionicons name="grid-outline" size={size} color={color} />
           ),
         }}
       />
+      {/* Remove the listeners - protect the screen content instead */}
       <Tabs.Screen
         name="cart"
         options={{
           title: "Cart",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ size, color }) => (
             <Ionicons name="cart-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="info"
-        options={{
-          title: "Info",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons
-              name="information-circle-outline"
-              size={size}
-              color={color}
-            />
           ),
         }}
       />
@@ -67,8 +48,21 @@ export default function TabLayout() {
         name="account"
         options={{
           title: "Account",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ size, color }) => (
             <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="info"
+        options={{
+          title: "Info",
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons
+              name="information-circle-outline"
+              size={size}
+              color={color}
+            />
           ),
         }}
       />

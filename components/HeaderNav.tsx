@@ -1,10 +1,11 @@
+import { getCartItemsCount } from "@/data/mockData";
 import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,6 +25,23 @@ export default function HeaderNav({
   title = "",
 }: HeaderNavProps) {
   const { isTablet, isSmallDevice } = useResponsive();
+  const [cartItemsCount, setCartItemsCount] = useState(0);
+
+  // Update cart count when component mounts and when cart changes
+  useEffect(() => {
+    const updateCartCount = () => {
+      const count = getCartItemsCount();
+      setCartItemsCount(count);
+    };
+
+    // Initial update
+    updateCartCount();
+
+    // Set up interval to check for cart changes (in a real app, use context or state management)
+    const interval = setInterval(updateCartCount, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <SafeAreaView edges={["top"]} style={styles.headerClass}>
@@ -89,23 +107,27 @@ export default function HeaderNav({
           {showCart && (
             <Pressable
               style={styles.iconButton}
-              onPress={() => router.push("/cart")}
+              onPress={() => router.push("/(tabs)/cart")}
             >
               <Ionicons
                 name="cart-outline"
                 size={isSmallDevice ? 20 : 24}
                 color={colors.primary}
               />
-              <View style={[styles.badge, isSmallDevice && styles.badgeSmall]}>
-                <Text
-                  style={[
-                    styles.badgeText,
-                    isSmallDevice && styles.badgeTextSmall,
-                  ]}
+              {cartItemsCount > 0 && (
+                <View
+                  style={[styles.badge, isSmallDevice && styles.badgeSmall]}
                 >
-                  2
-                </Text>
-              </View>
+                  <Text
+                    style={[
+                      styles.badgeText,
+                      isSmallDevice && styles.badgeTextSmall,
+                    ]}
+                  >
+                    {cartItemsCount > 99 ? "99+" : cartItemsCount}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           )}
 
@@ -207,28 +229,28 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: 0,
-    right: 0,
+    top: -2,
+    right: -2,
     backgroundColor: colors.secondary,
     borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    minWidth: 18,
+    height: 18,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1.5,
     borderColor: colors.white,
   },
   badgeSmall: {
-    minWidth: 14,
-    height: 14,
+    minWidth: 16,
+    height: 16,
     borderWidth: 1,
   },
   badgeText: {
     color: colors.white,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "700",
   },
   badgeTextSmall: {
-    fontSize: 7,
+    fontSize: 8,
   },
 });

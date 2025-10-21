@@ -1,29 +1,110 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  DimensionValue,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 interface RegisterFormProps {
-  onToggleForm?: () => void;
+  onToggleForm: () => void;
+}
+
+interface FormData {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
 }
 
 export default function RegisterForm({ onToggleForm }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const { isSmallDevice, width } = useResponsive();
+  const { register } = useAuth();
 
-  // Calculate form width based on screen size
-  const getFormWidth = () => {
-    if (width < 400) return "95%"; // Very small phones
-    if (width < 768) return "100%"; // Phones and small tablets
-    if (width < 1024) return "70%"; // Tablets
-    return "50%"; // Large screens and desktop
+  const getFormWidth = (): DimensionValue => {
+    if (width < 400) return "95%";
+    if (width < 768) return "100%";
+    if (width < 1024) return "70%";
+    return "50%";
   };
 
   const formWidth = getFormWidth();
+
+  const handleInputChange = (field: keyof FormData, value: string): void => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleRegister = async (): Promise<void> => {
+    const { username, email, password, confirmPassword, firstName, lastName } =
+      formData;
+
+    if (
+      !username ||
+      !email ||
+      !password ||
+      !confirmPassword ||
+      !firstName ||
+      !lastName
+    ) {
+      Alert.alert("Error", "Please fill in all required fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long");
+      return;
+    }
+
+    setIsLoading(true);
+    const success = await register({
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      phone: formData.phone,
+    });
+    setIsLoading(false);
+
+    if (success) {
+      router.replace("/(tabs)/account" as any);
+    } else {
+      Alert.alert("Error", "Registration failed. Please try again.");
+    }
+  };
 
   return (
     <View
@@ -38,20 +119,85 @@ export default function RegisterForm({ onToggleForm }: RegisterFormProps) {
       </Text>
 
       <View style={styles.form}>
+        <View style={styles.row}>
+          <View style={[styles.inputWrapper, styles.halfInput]}>
+            <Text style={[styles.label, isSmallDevice && styles.labelSmall]}>
+              First Name *
+            </Text>
+            <TextInput
+              style={[
+                styles.inputField,
+                isSmallDevice && styles.inputFieldSmall,
+              ]}
+              placeholder="First name"
+              placeholderTextColor={colors.textSecondary}
+              value={formData.firstName}
+              onChangeText={(value) => handleInputChange("firstName", value)}
+            />
+          </View>
+          <View style={[styles.inputWrapper, styles.halfInput]}>
+            <Text style={[styles.label, isSmallDevice && styles.labelSmall]}>
+              Last Name *
+            </Text>
+            <TextInput
+              style={[
+                styles.inputField,
+                isSmallDevice && styles.inputFieldSmall,
+              ]}
+              placeholder="Last name"
+              placeholderTextColor={colors.textSecondary}
+              value={formData.lastName}
+              onChangeText={(value) => handleInputChange("lastName", value)}
+            />
+          </View>
+        </View>
+
         <View style={styles.inputWrapper}>
           <Text style={[styles.label, isSmallDevice && styles.labelSmall]}>
-            Username
+            Username *
           </Text>
           <TextInput
             style={[styles.inputField, isSmallDevice && styles.inputFieldSmall]}
-            placeholder="Enter username..."
+            placeholder="Choose username"
             placeholderTextColor={colors.textSecondary}
+            value={formData.username}
+            onChangeText={(value) => handleInputChange("username", value)}
+            autoCapitalize="none"
           />
         </View>
 
         <View style={styles.inputWrapper}>
           <Text style={[styles.label, isSmallDevice && styles.labelSmall]}>
-            Password
+            Email *
+          </Text>
+          <TextInput
+            style={[styles.inputField, isSmallDevice && styles.inputFieldSmall]}
+            placeholder="Enter your email"
+            placeholderTextColor={colors.textSecondary}
+            value={formData.email}
+            onChangeText={(value) => handleInputChange("email", value)}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={[styles.label, isSmallDevice && styles.labelSmall]}>
+            Phone
+          </Text>
+          <TextInput
+            style={[styles.inputField, isSmallDevice && styles.inputFieldSmall]}
+            placeholder="Phone number (optional)"
+            placeholderTextColor={colors.textSecondary}
+            value={formData.phone}
+            onChangeText={(value) => handleInputChange("phone", value)}
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={[styles.label, isSmallDevice && styles.labelSmall]}>
+            Password *
           </Text>
           <View style={styles.passwordContainer}>
             <TextInput
@@ -59,9 +205,11 @@ export default function RegisterForm({ onToggleForm }: RegisterFormProps) {
                 styles.inputField,
                 isSmallDevice && styles.inputFieldSmall,
               ]}
-              placeholder="Enter password..."
+              placeholder="Enter password"
               placeholderTextColor={colors.textSecondary}
               secureTextEntry={!showPassword}
+              value={formData.password}
+              onChangeText={(value) => handleInputChange("password", value)}
             />
             <Pressable
               style={[
@@ -81,7 +229,7 @@ export default function RegisterForm({ onToggleForm }: RegisterFormProps) {
 
         <View style={styles.inputWrapper}>
           <Text style={[styles.label, isSmallDevice && styles.labelSmall]}>
-            Confirm Password
+            Confirm Password *
           </Text>
           <View style={styles.passwordContainer}>
             <TextInput
@@ -89,9 +237,13 @@ export default function RegisterForm({ onToggleForm }: RegisterFormProps) {
                 styles.inputField,
                 isSmallDevice && styles.inputFieldSmall,
               ]}
-              placeholder="Confirm password..."
+              placeholder="Confirm password"
               placeholderTextColor={colors.textSecondary}
               secureTextEntry={!showConfirm}
+              value={formData.confirmPassword}
+              onChangeText={(value) =>
+                handleInputChange("confirmPassword", value)
+              }
             />
             <Pressable
               style={[
@@ -110,7 +262,13 @@ export default function RegisterForm({ onToggleForm }: RegisterFormProps) {
         </View>
 
         <Pressable
-          style={[styles.primaryBtn, isSmallDevice && styles.primaryBtnSmall]}
+          style={[
+            styles.primaryBtn,
+            isSmallDevice && styles.primaryBtnSmall,
+            isLoading && styles.disabledBtn,
+          ]}
+          onPress={handleRegister}
+          disabled={isLoading}
         >
           <Ionicons
             name="person-add"
@@ -120,12 +278,11 @@ export default function RegisterForm({ onToggleForm }: RegisterFormProps) {
           <Text
             style={[styles.btnLabel, isSmallDevice && styles.btnLabelSmall]}
           >
-            Register
+            {isLoading ? "Creating Account..." : "Register"}
           </Text>
         </Pressable>
       </View>
 
-      {/* Login Link - Use the parent's toggle function */}
       <View style={styles.loginSection}>
         <Text
           style={[styles.loginText, isSmallDevice && styles.loginTextSmall]}
@@ -141,7 +298,6 @@ export default function RegisterForm({ onToggleForm }: RegisterFormProps) {
         </Pressable>
       </View>
 
-      {/* Social Login - Only show on larger screens */}
       {!isSmallDevice && (
         <View style={styles.socialLogin}>
           <Pressable style={styles.googleBtn}>
@@ -173,7 +329,7 @@ export default function RegisterForm({ onToggleForm }: RegisterFormProps) {
 
 const styles = StyleSheet.create({
   formSection: {
-    alignSelf: "center",
+    alignSelf: "center" as const,
     padding: spacing.xl,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -184,17 +340,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 4,
-    maxWidth: 500, // Maximum width to prevent it from getting too wide
-    minWidth: 300, // Minimum width to maintain usability
+    maxWidth: 500,
+    minWidth: 300,
   },
   formSectionSmall: {
     padding: spacing.lg,
-    maxWidth: "100%", // On small devices, allow full available width
+    maxWidth: "100%",
   },
   title: {
     fontSize: 28,
     fontWeight: "700",
-    textAlign: "center",
+    textAlign: "center" as const,
     marginBottom: spacing.lg,
     color: colors.black,
   },
@@ -204,6 +360,13 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing.md,
+  },
+  row: {
+    flexDirection: "row" as const,
+    gap: spacing.md,
+  },
+  halfInput: {
+    flex: 1,
   },
   inputWrapper: {
     marginBottom: spacing.sm,
@@ -218,7 +381,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   passwordContainer: {
-    position: "relative",
+    position: "relative" as const,
   },
   inputField: {
     width: "100%",
@@ -236,7 +399,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   toggleVisibility: {
-    position: "absolute",
+    position: "absolute" as const,
     right: 12,
     top: 12,
     padding: 4,
@@ -250,9 +413,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     marginTop: spacing.sm,
     gap: spacing.sm,
     shadowColor: "#000",
@@ -260,6 +423,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  disabledBtn: {
+    opacity: 0.6,
   },
   primaryBtnSmall: {
     paddingVertical: spacing.sm,
@@ -273,9 +439,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   loginSection: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
     marginTop: spacing.lg,
     gap: spacing.sm,
   },
@@ -303,9 +469,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     gap: spacing.md,
     borderWidth: 2,
     borderColor: colors.border,
@@ -320,9 +486,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     gap: spacing.md,
     borderWidth: 2,
     borderColor: colors.border,

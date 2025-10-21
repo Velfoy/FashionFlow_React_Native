@@ -663,7 +663,7 @@ export default function SearchBar({
     </View>
   );
 
-  // Filter modal content
+  // Filter modal content with tablet optimizations
   const renderFilterModal = () => (
     <Modal
       visible={filterModalOpen}
@@ -673,7 +673,11 @@ export default function SearchBar({
     >
       <View style={styles.modalOverlay}>
         <View
-          style={[styles.filterModal, isTablet && styles.filterModalTablet]}
+          style={[
+            styles.filterModal,
+            isTablet && styles.filterModalTablet,
+            isLandscape && styles.filterModalLandscape,
+          ]}
         >
           {/* Header */}
           <View style={styles.modalHeader}>
@@ -698,14 +702,22 @@ export default function SearchBar({
           {/* Content */}
           <ScrollView
             style={styles.filterContent}
-            contentContainerStyle={styles.filterContentContainer}
+            contentContainerStyle={[
+              styles.filterContentContainer,
+              isTablet && styles.filterContentContainerTablet,
+            ]}
             showsVerticalScrollIndicator={true}
             alwaysBounceVertical={true}
           >
             {/* Price Range */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Price Range</Text>
-              <View style={styles.priceInputs}>
+              <View
+                style={[
+                  styles.priceInputs,
+                  isTablet && styles.priceInputsTablet,
+                ]}
+              >
                 <View style={styles.priceInput}>
                   <Text style={styles.priceLabel}>Min Price</Text>
                   <TextInput
@@ -736,12 +748,18 @@ export default function SearchBar({
             {/* Rating Filter */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Rating</Text>
-              <View style={styles.ratingFilters}>
+              <View
+                style={[
+                  styles.ratingFilters,
+                  isTablet && styles.ratingFiltersTablet,
+                ]}
+              >
                 {ratings.map((rating) => (
                   <Pressable
                     key={rating}
                     style={[
                       styles.ratingFilter,
+                      isTablet && styles.ratingFilterTablet,
                       filters.selectedRatings.includes(rating) &&
                         styles.ratingFilterSelected,
                     ]}
@@ -750,6 +768,7 @@ export default function SearchBar({
                     <Text
                       style={[
                         styles.ratingFilterText,
+                        isTablet && styles.ratingFilterTextTablet,
                         filters.selectedRatings.includes(rating) &&
                           styles.ratingFilterTextSelected,
                       ]}
@@ -764,12 +783,18 @@ export default function SearchBar({
             {/* Owner Filter */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Brand/Owner</Text>
-              <View style={styles.ownerFilters}>
+              <View
+                style={[
+                  styles.ownerFilters,
+                  isTablet && styles.ownerFiltersTablet,
+                ]}
+              >
                 {owners.map((owner) => (
                   <Pressable
                     key={owner}
                     style={[
                       styles.ownerFilter,
+                      isTablet && styles.ownerFilterTablet,
                       filters.selectedOwners.includes(owner) &&
                         styles.ownerFilterSelected,
                     ]}
@@ -778,6 +803,7 @@ export default function SearchBar({
                     <Text
                       style={[
                         styles.ownerFilterText,
+                        isTablet && styles.ownerFilterTextTablet,
                         filters.selectedOwners.includes(owner) &&
                           styles.ownerFilterTextSelected,
                       ]}
@@ -788,7 +814,7 @@ export default function SearchBar({
                       <Ionicons
                         name="checkmark"
                         size={16}
-                        color={colors.primary}
+                        color={colors.black}
                       />
                     )}
                   </Pressable>
@@ -839,6 +865,7 @@ export default function SearchBar({
                     key={option.value}
                     style={[
                       styles.sortOption,
+                      isTablet && styles.sortOptionTablet,
                       filters.sortBy === option.value &&
                         styles.sortOptionSelected,
                     ]}
@@ -862,6 +889,7 @@ export default function SearchBar({
                     <Text
                       style={[
                         styles.sortOptionText,
+                        isTablet && styles.sortOptionTextTablet,
                         filters.sortBy === option.value &&
                           styles.sortOptionTextSelected,
                       ]}
@@ -902,6 +930,7 @@ export default function SearchBar({
           styles.searchContainer,
           isTablet && styles.searchContainerTablet,
           isSmallDevice && styles.searchContainerSmall,
+          isLandscape && styles.searchContainerLandscape,
         ]}
       >
         {/* Category Dropdown */}
@@ -910,6 +939,7 @@ export default function SearchBar({
             styles.dropdown,
             isTablet && styles.dropdownTablet,
             isSmallDevice && styles.dropdownSmall,
+            isLandscape && styles.dropdownLandscape,
           ]}
           onPress={() => setDropdownOpen(true)}
         >
@@ -925,8 +955,8 @@ export default function SearchBar({
           </Text>
           <Ionicons
             name="chevron-down"
-            size={isTablet ? 18 : 16}
-            color={colors.primary}
+            size={isTablet ? 20 : 16}
+            color={colors.black}
           />
         </Pressable>
 
@@ -936,6 +966,7 @@ export default function SearchBar({
             styles.searchInput,
             isTablet && styles.searchInputTablet,
             isSmallDevice && styles.searchInputSmall,
+            isLandscape && styles.searchInputLandscape,
           ]}
           placeholder="Search for items..."
           placeholderTextColor={colors.textSecondary}
@@ -950,25 +981,33 @@ export default function SearchBar({
 
         {/* Filter Button */}
         <Pressable
-          style={[styles.filterButton, isTablet && styles.filterButtonTablet]}
+          style={[
+            styles.filterButton,
+            isTablet && styles.filterButtonTablet,
+            isLandscape && styles.filterButtonLandscape,
+          ]}
           onPress={() => setFilterModalOpen(true)}
         >
           <Ionicons
             name="options-outline"
-            size={isTablet ? 22 : 18}
-            color={colors.primary}
+            size={isTablet ? 24 : 18}
+            color={colors.black}
           />
         </Pressable>
 
         {/* Search or Clear Button */}
         <Pressable
-          style={[styles.searchIcon, isTablet && styles.searchIconTablet]}
+          style={[
+            styles.searchIcon,
+            isTablet && styles.searchIconTablet,
+            isLandscape && styles.searchIconLandscape,
+          ]}
           onPress={searchQuery ? clearSearch : () => handleSearch()}
         >
           <Ionicons
             name={searchQuery ? "close-circle" : "search"}
-            size={isTablet ? 22 : 18}
-            color={colors.primary}
+            size={isTablet ? 24 : 18}
+            color={colors.black}
           />
         </Pressable>
       </View>
@@ -1082,7 +1121,7 @@ export default function SearchBar({
                     <Ionicons
                       name="checkmark"
                       size={isTablet ? 22 : 20}
-                      color={colors.primary}
+                      color={colors.black}
                     />
                   )}
                 </Pressable>
@@ -1098,7 +1137,6 @@ export default function SearchBar({
   );
 }
 
-// Styles remain exactly the same as your original SearchBar component
 const styles = StyleSheet.create({
   searchMain: {
     width: "100%",
@@ -1115,24 +1153,28 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#485780",
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
     backgroundColor: colors.white,
     height: 50,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    overflow: "hidden",
   },
   searchContainerTablet: {
     height: 60,
-    borderRadius: 12,
-    borderWidth: 3,
+    borderRadius: 16,
   },
   searchContainerSmall: {
-    height: 45,
+    height: 44,
+    borderRadius: 10,
+  },
+  searchContainerLandscape: {
+    height: 55,
   },
   dropdown: {
     flexDirection: "row",
@@ -1140,9 +1182,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRightWidth: 1,
-    borderRightColor: colors.border,
-    minWidth: 100,
-    maxWidth: 140,
+    borderRightColor: colors.borderLight,
+    minWidth: 110,
+    maxWidth: 150,
+    backgroundColor: colors.background,
   },
   dropdownTablet: {
     minWidth: 140,
@@ -1150,82 +1193,97 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   dropdownSmall: {
-    minWidth: 80,
-    maxWidth: 120,
+    minWidth: 90,
+    maxWidth: 130,
     paddingHorizontal: spacing.sm,
   },
+  dropdownLandscape: {
+    minWidth: 120,
+    maxWidth: 160,
+  },
   dropdownText: {
-    fontSize: 13,
-    color: colors.primary,
+    fontSize: 14,
+    color: colors.text,
     fontWeight: "500",
     marginRight: spacing.xs,
     flex: 1,
   },
   dropdownTextTablet: {
-    fontSize: 15,
+    fontSize: 16,
   },
   dropdownTextSmall: {
-    fontSize: 12,
+    fontSize: 13,
   },
   searchInput: {
     flex: 1,
     paddingHorizontal: spacing.md,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
+    height: "100%",
   },
   searchInputTablet: {
-    fontSize: 16,
+    fontSize: 18,
     paddingHorizontal: spacing.lg,
   },
   searchInputSmall: {
-    fontSize: 13,
+    fontSize: 15,
     paddingHorizontal: spacing.sm,
+  },
+  searchInputLandscape: {
+    fontSize: 16,
   },
   filterButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderLeftWidth: 1,
-    borderLeftColor: colors.border,
+    borderLeftColor: colors.borderLight,
     justifyContent: "center",
     alignItems: "center",
+    height: "100%",
   },
   filterButtonTablet: {
     paddingHorizontal: spacing.lg,
+  },
+  filterButtonLandscape: {
+    paddingHorizontal: spacing.md,
   },
   searchIcon: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     justifyContent: "center",
     alignItems: "center",
+    height: "100%",
   },
   searchIconTablet: {
     paddingHorizontal: spacing.lg,
+  },
+  searchIconLandscape: {
+    paddingHorizontal: spacing.md,
   },
   activeFilters: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     paddingHorizontal: spacing.xs,
   },
   activeFiltersText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
-    fontStyle: "italic",
     flex: 1,
   },
   clearFiltersSmallText: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: "500",
+    fontSize: 14,
+    color: colors.black,
+    fontWeight: "600",
   },
   resultsContainer: {
-    width: "95%",
-    alignSelf: "center",
-    marginTop: spacing.sm,
+    width: "100%",
+    marginTop: spacing.md,
   },
   bestGrid: {
     gap: spacing.md,
+    paddingBottom: spacing.md,
   },
   columnWrapper: {
     justifyContent: "space-between",
@@ -1233,16 +1291,16 @@ const styles = StyleSheet.create({
   },
   bestCard: {
     backgroundColor: colors.white,
-    borderRadius: 15,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.borderLight,
-    padding: spacing.lg,
+    padding: spacing.md,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
     minWidth: 100,
   },
   bestBadge: {
@@ -1260,7 +1318,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 50,
-    backgroundColor: "#FF4444",
+    backgroundColor: "#DC2626",
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: 4,
@@ -1269,12 +1327,12 @@ const styles = StyleSheet.create({
   discountBadgeText: {
     color: colors.white,
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   badgeText: {
     color: colors.white,
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   cartAdd: {
     position: "absolute",
@@ -1285,9 +1343,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: spacing.xs,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
   },
   bestImage: {
@@ -1301,15 +1359,16 @@ const styles = StyleSheet.create({
   bestCardNameDiv: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: spacing.xs,
+    gap: spacing.sm,
   },
   bestCardTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
     flex: 1,
-    marginRight: spacing.sm,
-    lineHeight: 18,
+    lineHeight: 20,
+    color: colors.text,
   },
   bestCardLink: {
     width: 30,
@@ -1332,16 +1391,16 @@ const styles = StyleSheet.create({
   },
   bestRatingNum: {
     fontSize: 12,
-    color: "#B6B6B6",
+    color: colors.textSecondary,
     marginLeft: spacing.xs,
   },
   bestOwner: {
-    fontSize: 12,
-    color: "#B6B6B6",
+    fontSize: 13,
+    color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
   ownerName: {
-    color: colors.black,
+    color: colors.text,
     fontWeight: "600",
   },
   bestPriceRow: {
@@ -1350,9 +1409,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   bestPrice: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
-    color: colors.black,
+    color: colors.text,
   },
   bestOriginalPrice: {
     fontSize: 14,
@@ -1370,7 +1429,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   emptyStateButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.black,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: 8,
@@ -1413,6 +1472,12 @@ const styles = StyleSheet.create({
     maxHeight: "80%",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
+    width: "80%",
+    alignSelf: "center",
+  },
+  filterModalLandscape: {
+    maxHeight: "85%",
+    width: "70%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -1444,8 +1509,8 @@ const styles = StyleSheet.create({
   },
   clearFiltersText: {
     fontSize: 14,
-    color: colors.primary,
-    fontWeight: "500",
+    color: colors.black,
+    fontWeight: "600",
   },
   filterContent: {
     flex: 1,
@@ -1454,11 +1519,15 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing.xl,
   },
+  filterContentContainerTablet: {
+    padding: spacing.xl,
+    paddingBottom: spacing.xl,
+  },
   filterSection: {
     marginBottom: spacing.xl,
     backgroundColor: colors.white,
     padding: spacing.md,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.borderLight,
   },
@@ -1472,6 +1541,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md,
   },
+  priceInputsTablet: {
+    gap: spacing.lg,
+  },
   priceInput: {
     flex: 1,
   },
@@ -1479,20 +1551,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginBottom: spacing.xs,
+    fontWeight: "500",
   },
   priceInputField: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
     padding: spacing.md,
-    fontSize: 14,
+    fontSize: 16,
     backgroundColor: colors.white,
     minHeight: 50,
+    color: colors.text,
   },
   ratingFilters: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
+  },
+  ratingFiltersTablet: {
+    gap: spacing.md,
   },
   ratingFilter: {
     paddingHorizontal: spacing.md,
@@ -1502,13 +1579,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  ratingFilterTablet: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
   ratingFilterSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.black,
+    borderColor: colors.black,
   },
   ratingFilterText: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.text,
+    fontWeight: "500",
+  },
+  ratingFilterTextTablet: {
+    fontSize: 14,
   },
   ratingFilterTextSelected: {
     color: colors.white,
@@ -1516,6 +1601,9 @@ const styles = StyleSheet.create({
   },
   ownerFilters: {
     gap: spacing.sm,
+  },
+  ownerFiltersTablet: {
+    gap: spacing.md,
   },
   ownerFilter: {
     flexDirection: "row",
@@ -1527,16 +1615,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  ownerFilterTablet: {
+    padding: spacing.lg,
+  },
   ownerFilterSelected: {
     backgroundColor: colors.backgroundSecondary,
-    borderColor: colors.primary,
+    borderColor: colors.black,
   },
   ownerFilterText: {
     fontSize: 14,
     color: colors.text,
+    fontWeight: "500",
+  },
+  ownerFilterTextTablet: {
+    fontSize: 16,
   },
   ownerFilterTextSelected: {
-    color: colors.primary,
+    color: colors.black,
     fontWeight: "600",
   },
   checkboxFilter: {
@@ -1555,13 +1650,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   checkboxSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.black,
+    borderColor: colors.black,
   },
   checkboxLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text,
     flex: 1,
+    fontWeight: "500",
   },
   sortOptions: {
     gap: spacing.sm,
@@ -1576,9 +1672,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  sortOptionTablet: {
+    padding: spacing.lg,
+  },
   sortOptionSelected: {
     backgroundColor: colors.backgroundSecondary,
-    borderColor: colors.primary,
+    borderColor: colors.black,
   },
   radio: {
     width: 20,
@@ -1590,21 +1689,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   radioSelected: {
-    borderColor: colors.primary,
+    borderColor: colors.black,
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.black,
   },
   sortOptionText: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text,
     flex: 1,
+    fontWeight: "500",
+  },
+  sortOptionTextTablet: {
+    fontSize: 16,
   },
   sortOptionTextSelected: {
-    color: colors.primary,
+    color: colors.black,
     fontWeight: "600",
   },
   filterFooter: {
@@ -1613,7 +1716,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   applyFiltersButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.black,
     padding: spacing.lg,
     borderRadius: 12,
     alignItems: "center",
@@ -1642,12 +1745,13 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 16,
     color: colors.text,
+    fontWeight: "500",
   },
   dropdownItemTextTablet: {
     fontSize: 18,
   },
   dropdownItemTextSelected: {
     fontWeight: "600",
-    color: colors.primary,
+    color: colors.black,
   },
 });

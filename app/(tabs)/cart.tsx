@@ -1,5 +1,6 @@
-// app/(tabs)/cart.tsx - UPDATED VERSION
 import HeaderNav from "@/components/HeaderNav";
+import { useAuth } from "@/contexts/AuthContext";
+import { Order } from "@/data/authData";
 import {
   CartItem,
   getCartItems,
@@ -23,7 +24,7 @@ import {
   View,
 } from "react-native";
 
-// Types (keep your existing types, just update interfaces as needed)
+// Types
 interface Seller {
   id: number;
   name: string;
@@ -67,20 +68,12 @@ interface PaymentMethod {
   icon: string;
 }
 
-// Mock data (keep your existing mock data, just update sellers to use cart items)
+// Mock data
 const sellersFromCart = (cartItems: CartItem[]): Seller[] => {
-  // Group cart items by seller (in a real app, you'd have seller info)
   const sellerMap: { [key: string]: CartItem[] } = {};
 
   cartItems.forEach((item) => {
-    // For demo, we'll create sellers based on product categories
-    const sellerName = item.name.includes("watch")
-      ? "Seny"
-      : item.name.includes("pants")
-      ? "Selle"
-      : item.name.includes("jacket")
-      ? "Premium Store"
-      : "General Store";
+    const sellerName = item.company || item.brand || "Unknown Seller";
 
     if (!sellerMap[sellerName]) {
       sellerMap[sellerName] = [];
@@ -152,6 +145,7 @@ type Step = "cart" | "place-order" | "pay" | "completed";
 
 export default function CartPage() {
   const { isTablet, isLandscape, width } = useResponsive();
+  const { user, isAuthenticated, addUserOrder, getUserAddresses } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>("cart");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
@@ -161,10 +155,16 @@ export default function CartPage() {
   const [selectedShipping, setSelectedShipping] = useState("method-0");
   const [selectedPayment, setSelectedPayment] = useState("payment-0");
   const [isEditing, setIsEditing] = useState(false);
+
+  // Use user's addresses if logged in, otherwise use default
+  const userAddresses = getUserAddresses();
+  const defaultAddress =
+    userAddresses.find((addr) => addr.isDefault) || userAddresses[0];
+
   const [address, setAddress] = useState<Address>({
-    name: "Valeriia Zlydar",
-    phone: "883589324",
-    email: "marsonyteam@gmail.com",
+    name: user ? `${user.firstName} ${user.lastName}` : "Valeriia Zlydar",
+    phone: user?.phone || "883589324",
+    email: user?.email || "marsonyteam@gmail.com",
     deliveryPoint: "LOD51N al. Politechniki 1",
     address: "al. Politechniki",
     city: "Łódź",
@@ -176,6 +176,22 @@ export default function CartPage() {
   useEffect(() => {
     loadCartItems();
   }, []);
+
+  // Update address when user changes
+  useEffect(() => {
+    if (user && defaultAddress) {
+      setAddress({
+        name: `${user.firstName} ${user.lastName}`,
+        phone: user.phone || "883589324",
+        email: user.email,
+        deliveryPoint: `${defaultAddress.city} ${defaultAddress.street}`,
+        address: defaultAddress.street,
+        city: defaultAddress.city,
+        postalCode: defaultAddress.zipCode,
+        country: defaultAddress.country,
+      });
+    }
+  }, [user, defaultAddress]);
 
   const loadCartItems = () => {
     const items = getCartItems();
@@ -322,6 +338,17 @@ export default function CartPage() {
   };
 
   const handleCheckout = () => {
+    if (!isAuthenticated) {
+      Alert.alert("Login Required", "Please login to proceed with checkout", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Login",
+          onPress: () => router.push("/auth/login" as any),
+        },
+      ]);
+      return;
+    }
+
     if (selectedProducts.length === 0) {
       Alert.alert(
         "Empty Cart",
@@ -337,6 +364,49 @@ export default function CartPage() {
   };
 
   const handlePayment = () => {
+    // Create order for the user
+    if (user) {
+      // Convert CartItem[] to OrderItem[]
+      const orderItems = selectedProducts.map((item) => ({
+        id: item.id.toString(),
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        image: item.image,
+        size: item.size,
+        brand: item.brand,
+        company: item.company,
+      }));
+
+      const newOrder: Order = {
+        id: Date.now().toString(),
+        orderNumber: `ORD-${Date.now()}`,
+        date: new Date().toISOString().split("T")[0],
+        status: "pending",
+        total: total,
+        items: orderItems, // Use the converted items
+        shippingAddress: defaultAddress || {
+          id: "1",
+          firstName: user.firstName,
+          lastName: user.lastName,
+          street: address.address,
+          city: address.city,
+          zipCode: address.postalCode,
+          country: address.country,
+          isDefault: true,
+        },
+        trackingNumber: `TRK${Date.now()}`,
+      };
+
+      addUserOrder(newOrder);
+
+      // Clear the cart after successful order
+      selectedProducts.forEach((product) => {
+        removeFromCart(product.id);
+      });
+    }
+
     setCurrentStep("completed");
   };
 
@@ -360,6 +430,7 @@ export default function CartPage() {
         .substr(2, 9)
         .toUpperCase()} has been placed successfully!`
     );
+    router.push("/(tabs)/account" as any);
   };
 
   const handleSaveAddress = () => {
@@ -568,7 +639,13 @@ export default function CartPage() {
                               )}
                             </View>
                           </Pressable>
-                          <Text style={styles.sellerName}>{seller.name}</Text>
+                          <View style={styles.sellerInfo}>
+                            <Text style={styles.sellerName}>{seller.name}</Text>
+                            <Text style={styles.sellerItems}>
+                              {seller.products.length} item
+                              {seller.products.length !== 1 ? "s" : ""}
+                            </Text>
+                          </View>
                         </View>
 
                         {seller.products.map((product) => {
@@ -634,6 +711,12 @@ export default function CartPage() {
                                 </Text>
                                 <Text style={styles.productDesc}>
                                   Size: {product.size}
+                                </Text>
+                                <Text style={styles.productCompany}>
+                                  Sold by:{" "}
+                                  {product.company ||
+                                    product.brand ||
+                                    "Unknown Seller"}
                                 </Text>
                                 <View style={styles.priceContainer}>
                                   <Text
@@ -1174,11 +1257,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: spacing.sm,
   },
+  sellerInfo: {
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
   sellerName: {
     fontSize: 16,
     fontWeight: "700",
-    marginLeft: spacing.sm,
     color: colors.text,
+  },
+  sellerItems: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   cartCard: {
     flexDirection: "row",
@@ -1235,6 +1326,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginBottom: spacing.xs,
+  },
+  productCompany: {
+    fontSize: 11,
+    color: colors.textLight,
+    marginBottom: spacing.xs,
+    fontStyle: "italic",
   },
   priceContainer: {
     flexDirection: "row",
