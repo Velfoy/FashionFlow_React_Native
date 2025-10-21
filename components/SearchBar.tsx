@@ -1,10 +1,11 @@
+import { useCategory } from "@/contexts/CategoryContext";
 import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   Modal,
@@ -16,78 +17,327 @@ import {
   View,
 } from "react-native";
 
-// Mock data for products
+// Mock data for products - matching the product detail page structure
 const mockProducts = [
   {
     id: 1,
-    title: "iPhone 15 Pro",
-    category: "Electronics",
-    price: 999,
-    originalPrice: 1199,
+    title: "Nike Air Max 270",
+    category: "Shoes",
+    price: 2499,
+    originalPrice: 4999,
     image:
       "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop",
-    rating: 5,
-    owner: "Apple",
+    rating: 5.0,
+    owner: "Nike",
     hasDiscount: true,
+    description:
+      "Experience unparalleled comfort and style with the Nike Air Max 270. Featuring the largest Air Max unit yet, these shoes provide maximum cushioning for all-day wear.",
+    color: "black/white",
+    material: "synthetic mesh",
+    condition: "new",
+    views: 149,
+    images: [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=500&h=500&fit=crop",
+    ],
+    tags: [
+      "👟 running shoes",
+      "⭐ premium",
+      "💨 air max technology",
+      "🏃 athletic",
+    ],
   },
   {
     id: 2,
-    title: "Samsung Galaxy S24",
-    category: "Electronics",
-    price: 849,
-    originalPrice: 999,
+    title: "Adidas Ultraboost",
+    category: "Shoes",
+    price: 2199,
+    originalPrice: 4599,
     image:
       "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=500&h=500&fit=crop",
-    rating: 4,
-    owner: "Samsung",
+    rating: 4.8,
+    owner: "Adidas",
     hasDiscount: true,
+    description:
+      "The Adidas Ultraboost combines responsive cushioning with a sleek, modern design. Featuring Boost midsole technology for exceptional energy return.",
+    color: "core black",
+    material: "primeknit",
+    condition: "new",
+    views: 203,
+    images: [
+      "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1499364786053-c25f0d1e039f?w=500&h=500&fit=crop",
+    ],
+    tags: [
+      "👟 boost technology",
+      "🎯 performance",
+      "💫 energy return",
+      "🏃 running",
+    ],
   },
   {
     id: 3,
-    title: "MacBook Air M2",
-    category: "Electronics",
-    price: 1199,
-    originalPrice: 1199,
+    title: "Puma RS-X",
+    category: "Shoes",
+    price: 1899,
+    originalPrice: 3999,
     image:
       "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&h=500&fit=crop",
-    rating: 5,
-    owner: "Apple",
-    hasDiscount: false,
+    rating: 4.5,
+    owner: "Puma",
+    hasDiscount: true,
+    description:
+      "Bold and futuristic, the Puma RS-X brings retro-inspired design with modern comfort. The chunky silhouette and mixed-material upper create a unique street-style look.",
+    color: "multi-color",
+    material: "synthetic leather",
+    condition: "new",
+    views: 87,
+    images: [
+      "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop",
+    ],
+    tags: ["👟 retro style", "🎨 colorful", "🛸 futuristic", "🚶 casual wear"],
   },
   {
     id: 4,
-    title: "Nike Air Max",
+    title: "New Balance 574",
     category: "Shoes",
-    price: 120,
-    originalPrice: 150,
+    price: 1999,
+    originalPrice: 4299,
     image:
       "https://images.unsplash.com/photo-1605348532760-6753d2c43329?w=500&h=500&fit=crop",
-    rating: 4,
-    owner: "Nike",
+    rating: 4.7,
+    owner: "New Balance",
     hasDiscount: true,
+    description:
+      "A timeless classic reimagined for modern comfort. The New Balance 574 features ENCAP midsole technology for superior support and durability.",
+    color: "grey",
+    material: "suede/mesh",
+    condition: "new",
+    views: 124,
+    images: [
+      "https://images.unsplash.com/photo-1605348532760-6753d2c43329?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=500&h=500&fit=crop",
+    ],
+    tags: ["👟 classic", "💎 durable", "🎯 versatile", "🚶 everyday wear"],
+  },
+  {
+    id: 5,
+    title: "Classic Blue Jeans",
+    category: "Jeans",
+    price: 59,
+    originalPrice: 79,
+    image:
+      "https://images.unsplash.com/photo-1542272604-787c3835535d?w=500&h=500&fit=crop",
+    rating: 4.3,
+    owner: "Denim Co.",
+    hasDiscount: true,
+    description:
+      "Classic blue jeans made from premium denim. Perfect fit and comfortable for everyday wear with excellent durability.",
+    color: "blue",
+    material: "denim",
+    condition: "new",
+    views: 89,
+    images: [
+      "https://images.unsplash.com/photo-1542272604-787c3835535d?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1506629905607-e48b0e67d879?w=500&h=500&fit=crop",
+    ],
+    tags: ["👖 denim", "💙 classic", "🎯 everyday", "🚶 casual"],
+  },
+  {
+    id: 6,
+    title: "Cotton T-Shirt",
+    category: "T-shirts",
+    price: 25,
+    originalPrice: 35,
+    image:
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&h=500&fit=crop",
+    rating: 4.6,
+    owner: "Cotton Brand",
+    hasDiscount: true,
+    description:
+      "Soft and comfortable cotton t-shirt. Perfect for casual wear with a modern fit and excellent breathability.",
+    color: "white",
+    material: "cotton",
+    condition: "new",
+    views: 156,
+    images: [
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1506629905607-e48b0e67d879?w=500&h=500&fit=crop",
+    ],
+    tags: ["👕 cotton", "⚪ basic", "💫 comfortable", "🚶 casual"],
+  },
+  {
+    id: 7,
+    title: "Summer Shorts",
+    category: "Shorts",
+    price: 35,
+    originalPrice: 45,
+    image:
+      "https://images.unsplash.com/photo-1506629905607-e48b0e67d879?w=500&h=500&fit=crop",
+    rating: 4.2,
+    owner: "Casual Wear",
+    hasDiscount: true,
+    description:
+      "Lightweight and comfortable summer shorts. Perfect for warm weather with excellent ventilation and modern style.",
+    color: "khaki",
+    material: "cotton blend",
+    condition: "new",
+    views: 78,
+    images: [
+      "https://images.unsplash.com/photo-1506629905607-e48b0e67d879?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&h=500&fit=crop",
+    ],
+    tags: ["🩳 summer", "☀️ lightweight", "💨 breathable", "🚶 casual"],
+  },
+  {
+    id: 8,
+    title: "Business Suit",
+    category: "Suits",
+    price: 299,
+    originalPrice: 399,
+    image:
+      "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&h=500&fit=crop",
+    rating: 4.8,
+    owner: "Formal Attire",
+    hasDiscount: true,
+    description:
+      "Premium business suit with excellent tailoring and premium fabric. Perfect for professional settings and formal occasions.",
+    color: "navy blue",
+    material: "wool blend",
+    condition: "new",
+    views: 203,
+    images: [
+      "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1542272604-787c3835535d?w=500&h=500&fit=crop",
+    ],
+    tags: ["👔 formal", "💼 business", "⭐ premium", "🎯 professional"],
+  },
+  {
+    id: 9,
+    title: "Running Leggings",
+    category: "Leggings",
+    price: 45,
+    originalPrice: 65,
+    image:
+      "https://images.unsplash.com/photo-1588580000645-4562a6d2d839?w=500&h=500&fit=crop",
+    rating: 4.7,
+    owner: "Active Wear",
+    hasDiscount: true,
+    description:
+      "High-performance running leggings with moisture-wicking technology. Perfect for workouts and athletic activities.",
+    color: "black",
+    material: "spandex blend",
+    condition: "new",
+    views: 134,
+    images: [
+      "https://images.unsplash.com/photo-1588580000645-4562a6d2d839?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1506629905607-e48b0e67d879?w=500&h=500&fit=crop",
+    ],
+    tags: ["🧦 athletic", "🏃 running", "💪 workout", "🎯 performance"],
+  },
+  {
+    id: 10,
+    title: "Winter Cardigan",
+    category: "Cardigans",
+    price: 75,
+    originalPrice: 95,
+    image:
+      "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=500&h=500&fit=crop",
+    rating: 4.4,
+    owner: "Cozy Wear",
+    hasDiscount: true,
+    description:
+      "Warm and comfortable winter cardigan. Perfect for cold weather with soft fabric and modern design.",
+    color: "cream",
+    material: "wool blend",
+    condition: "new",
+    views: 98,
+    images: [
+      "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&h=500&fit=crop",
+    ],
+    tags: ["🧥 warm", "❄️ winter", "💫 cozy", "🚶 casual"],
+  },
+  {
+    id: 11,
+    title: "Leather Sneakers",
+    category: "Sneakers",
+    price: 129,
+    originalPrice: 179,
+    image:
+      "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&h=500&fit=crop",
+    rating: 4.6,
+    owner: "Urban Style",
+    hasDiscount: true,
+    description:
+      "Premium leather sneakers with modern design and comfortable fit. Perfect for urban style and everyday wear.",
+    color: "brown",
+    material: "genuine leather",
+    condition: "new",
+    views: 167,
+    images: [
+      "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop",
+    ],
+    tags: ["👟 leather", "🏙️ urban", "⭐ premium", "🚶 everyday"],
+  },
+  {
+    id: 12,
+    title: "Summer Sandals",
+    category: "Sandals",
+    price: 42,
+    originalPrice: 58,
+    image:
+      "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=500&h=500&fit=crop",
+    rating: 4.3,
+    owner: "Beach Wear",
+    hasDiscount: true,
+    description:
+      "Comfortable summer sandals perfect for beach and casual wear. Lightweight design with excellent grip.",
+    color: "beige",
+    material: "synthetic",
+    condition: "new",
+    views: 112,
+    images: [
+      "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1506629905607-e48b0e67d879?w=500&h=500&fit=crop",
+    ],
+    tags: ["👡 summer", "🏖️ beach", "💫 comfortable", "☀️ lightweight"],
   },
 ];
 
 const categories = [
   "All Categories",
-  "Electronics",
-  "Books",
-  "Clothing",
   "Shoes",
-  "Accessories",
+  "Jeans",
   "T-shirts",
+  "Shorts",
+  "Suits",
+  "Leggings",
+  "Cardigans",
+  "Sneakers",
+  "Sandals",
+  "Jackets",
   "Pants",
 ];
 
 const owners = [
-  "Apple",
-  "Samsung",
   "Nike",
   "Adidas",
-  "Cotton Brand",
+  "Puma",
+  "New Balance",
   "Denim Co.",
-  "Leather Crafts",
+  "Cotton Brand",
+  "Casual Wear",
+  "Formal Attire",
+  "Active Wear",
+  "Cozy Wear",
+  "Urban Style",
+  "Beach Wear",
 ];
+
 const ratings = [5, 4, 3, 2, 1];
 
 export interface SearchResult {
@@ -100,12 +350,20 @@ export interface SearchResult {
   rating: number;
   owner: string;
   hasDiscount: boolean;
+  description?: string;
+  color?: string;
+  material?: string;
+  condition?: string;
+  views?: number;
+  images?: string[];
+  tags?: string[];
 }
 
 interface SearchBarProps {
   onSearchResults?: (results: SearchResult[]) => void;
   onSearchQueryChange?: (query: string, category: string) => void;
   showResults?: boolean;
+  initialCategory?: string | null;
 }
 
 interface FilterState {
@@ -121,15 +379,36 @@ export default function SearchBar({
   onSearchResults,
   onSearchQueryChange,
   showResults = true,
+  initialCategory,
 }: SearchBarProps) {
   const { isTablet, isLandscape, isSmallDevice, width, height } =
     useResponsive();
+  const { selectedCategory: contextCategory, setSelectedCategory } =
+    useCategory();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedCategory, setSelectedCategoryLocal] =
+    useState("All Categories");
   const [searchResults, setSearchResults] =
     useState<SearchResult[]>(mockProducts);
+
+  // Set category from context when component mounts or when contextCategory changes
+  useEffect(() => {
+    if (contextCategory) {
+      setSelectedCategoryLocal(contextCategory);
+      // Clear the context category after using it
+      setSelectedCategory(null);
+    }
+  }, [contextCategory, setSelectedCategory]);
+
+  // Also handle initialCategory prop if provided
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategoryLocal(initialCategory);
+    }
+  }, [initialCategory]);
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -182,7 +461,9 @@ export default function SearchBar({
         (product) =>
           product.title.toLowerCase().includes(query) ||
           product.category.toLowerCase().includes(query) ||
-          product.owner.toLowerCase().includes(query)
+          product.owner.toLowerCase().includes(query) ||
+          product.description?.toLowerCase().includes(query) ||
+          product.tags?.some((tag) => tag.toLowerCase().includes(query))
       );
     }
 
@@ -203,7 +484,7 @@ export default function SearchBar({
     // Filter by rating
     if (filters.selectedRatings.length > 0) {
       results = results.filter((product) =>
-        filters.selectedRatings.includes(product.rating)
+        filters.selectedRatings.includes(Math.floor(product.rating))
       );
     }
 
@@ -242,7 +523,7 @@ export default function SearchBar({
   }, [searchQuery, selectedCategory, filters]);
 
   const selectCategory = (category: string) => {
-    setSelectedCategory(category);
+    setSelectedCategoryLocal(category);
     setDropdownOpen(false);
     handleSearch(searchQuery, category);
   };
@@ -258,7 +539,7 @@ export default function SearchBar({
 
   const clearSearch = () => {
     setSearchQuery("");
-    setSelectedCategory("All Categories");
+    setSelectedCategoryLocal("All Categories");
     setFilters({
       minPrice: "",
       maxPrice: "",
@@ -323,7 +604,15 @@ export default function SearchBar({
         </View>
       )}
 
-      <Pressable style={styles.cartAdd} onPress={() => router.push("/cart")}>
+      <Pressable
+        style={styles.cartAdd}
+        onPress={() =>
+          router.push({
+            pathname: "/product/[id]",
+            params: { id: item.id },
+          })
+        }
+      >
         <Ionicons name="cart" size={18} color={colors.black} />
       </Pressable>
 
@@ -352,8 +641,10 @@ export default function SearchBar({
         </View>
 
         <View style={styles.bestRatingD}>
-          <Text style={styles.bestRating}>{"★".repeat(item.rating)}</Text>
-          <Text style={styles.bestRatingNum}>({item.rating}.0)</Text>
+          <Text style={styles.bestRating}>
+            {"★".repeat(Math.floor(item.rating))}
+          </Text>
+          <Text style={styles.bestRatingNum}>({item.rating})</Text>
         </View>
 
         <Text style={styles.bestOwner}>
@@ -372,7 +663,7 @@ export default function SearchBar({
     </View>
   );
 
-  // Filter modal content - FIXED FOR MOBILE
+  // Filter modal content
   const renderFilterModal = () => (
     <Modal
       visible={filterModalOpen}
@@ -404,7 +695,7 @@ export default function SearchBar({
             </View>
           </View>
 
-          {/* Content - FIXED FOR MOBILE */}
+          {/* Content */}
           <ScrollView
             style={styles.filterContent}
             contentContainerStyle={styles.filterContentContainer}
@@ -435,7 +726,7 @@ export default function SearchBar({
                     onChangeText={(text) =>
                       setFilters((prev) => ({ ...prev, maxPrice: text }))
                     }
-                    placeholder="2000"
+                    placeholder="5000"
                     keyboardType="numeric"
                   />
                 </View>
@@ -807,6 +1098,7 @@ export default function SearchBar({
   );
 }
 
+// Styles remain exactly the same as your original SearchBar component
 const styles = StyleSheet.create({
   searchMain: {
     width: "100%",
@@ -939,7 +1231,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: spacing.md,
   },
-  // PRODUCT CARD STYLES
   bestCard: {
     backgroundColor: colors.white,
     borderRadius: 15,
@@ -1010,7 +1301,7 @@ const styles = StyleSheet.create({
   bestCardNameDiv: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: spacing.xs,
   },
   bestCardTitle: {
@@ -1088,7 +1379,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: "600",
   },
-  // MODAL STYLES - FIXED FOR MOBILE
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -1114,7 +1404,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: "90%",
     width: "100%",
-    // Add these for better simulator compatibility:
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -1158,13 +1447,12 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: "500",
   },
-  // FIXED FILTER CONTENT FOR MOBILE
   filterContent: {
     flex: 1,
   },
   filterContentContainer: {
     padding: spacing.lg,
-    paddingBottom: spacing.xl, // Extra padding for scroll
+    paddingBottom: spacing.xl,
   },
   filterSection: {
     marginBottom: spacing.xl,

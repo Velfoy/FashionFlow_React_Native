@@ -4,6 +4,7 @@ import { spacing } from "@/styles/spacing";
 import { Image } from "expo-image";
 import React, { useRef, useState } from "react";
 import {
+  Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -45,17 +46,18 @@ export default function HeroSlider() {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const { width, isSmallDevice, isTablet, isLargeDevice } = useResponsive();
+  const screenHeight = Dimensions.get("window").height;
 
-  // Responsive dimensions
-  const getSliderDimensions = () => {
-    if (isLargeDevice) return { height: 450, width: width * 0.91 };
-    if (isTablet) return { height: 400, width: width * 0.91 };
-    if (isSmallDevice) return { height: 300, width: width * 0.91 };
-    return { height: 350, width: width * 0.91 }; // medium devices
-  };
+  // Slider dimensions responsive to screen height
+  const sliderHeight = isLargeDevice
+    ? screenHeight * 0.55
+    : isTablet
+    ? screenHeight * 0.5
+    : isSmallDevice
+    ? screenHeight * 0.45
+    : screenHeight * 0.5;
 
-  const sliderDimensions = getSliderDimensions();
-  const slideWidth = sliderDimensions.width;
+  const slideWidth = width * 0.91;
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
@@ -63,37 +65,56 @@ export default function HeroSlider() {
     setActiveIndex(index);
   };
 
-  // Responsive typography
+  // Typography - independent font sizes for different devices
   const getTitleSize = () => {
-    if (isLargeDevice) return 36;
-    if (isTablet) return 32;
-    if (isSmallDevice) return 24;
-    return 28;
+    if (isSmallDevice) return 22; // phone
+    if (isTablet) return 28; // tablet
+    return 32; // large devices / desktop
   };
 
   const getSubtitleSize = () => {
     if (isSmallDevice) return 14;
+    if (isTablet) return 16;
+    return 18;
+  };
+
+  // Button font sizes
+  const getButtonFontSize = () => {
+    if (isSmallDevice) return 12;
+    if (isTablet) return 14;
     return 16;
   };
 
-  // Responsive layout
-  const getContentLayout = () => {
-    if (isSmallDevice) {
-      return {
-        left: spacing.lg,
-        maxWidth: width * 0.7,
-      };
-    }
-    return {
-      left: spacing.xl,
-      maxWidth: 350,
-    };
+  // Input font sizes
+  const getInputFontSize = () => {
+    if (isSmallDevice) return 12;
+    if (isTablet) return 14;
+    return 16;
   };
 
-  const contentLayout = getContentLayout();
+  // Layout
+  const contentPadding = isSmallDevice ? spacing.lg : spacing.xl;
+  const maxContentWidth = isSmallDevice ? width * 0.7 : 350;
+
+  // Fixed input width
+  const getInputWidth = () => {
+    if (isSmallDevice) return maxContentWidth - 20; // Account for padding
+    return 280; // Fixed width for tablets and larger
+  };
+
+  // Button & input responsive padding
+  const getButtonPadding = () => ({
+    paddingHorizontal: isSmallDevice ? spacing.md : spacing.lg,
+    paddingVertical: isSmallDevice ? spacing.sm : spacing.md,
+  });
+
+  const getInputPadding = () => ({
+    paddingHorizontal: isSmallDevice ? spacing.md : spacing.lg,
+    paddingVertical: isSmallDevice ? spacing.sm : spacing.md,
+  });
 
   return (
-    <View style={[styles.heroSlider, { height: sliderDimensions.height }]}>
+    <View style={[styles.heroSlider, { height: sliderHeight }]}>
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -110,34 +131,63 @@ export default function HeroSlider() {
               contentFit="cover"
             />
             <View style={styles.overlay} />
-            <View style={[styles.slideContent, contentLayout]}>
-              <Text style={[styles.slideTitle, { fontSize: getTitleSize() }]}>
+            <View
+              style={[
+                styles.slideContent,
+                { left: contentPadding, maxWidth: maxContentWidth },
+              ]}
+            >
+              <Text
+                style={[styles.slideTitle, { fontSize: getTitleSize() }]}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
                 {slide.title}
               </Text>
               <Text
                 style={[styles.slideSubtitle, { fontSize: getSubtitleSize() }]}
+                numberOfLines={2}
+                ellipsizeMode="tail"
               >
                 {slide.subtitle}
               </Text>
               <View
                 style={[
                   styles.emailInput,
-                  isSmallDevice && styles.emailInputSmall,
+                  {
+                    flexDirection: isSmallDevice ? "column" : "row",
+                    borderRadius: isSmallDevice ? 15 : 25,
+                    width: getInputWidth(),
+                  },
                 ]}
               >
                 <TextInput
-                  style={[styles.input, isSmallDevice && styles.inputSmall]}
+                  style={[
+                    styles.input,
+                    getInputPadding(),
+                    {
+                      fontSize: getInputFontSize(),
+                      width: isSmallDevice ? "100%" : "auto",
+                    },
+                  ]}
                   placeholder={slide.placeholder}
                   placeholderTextColor={colors.textSecondary}
+                  numberOfLines={1}
                 />
                 <Pressable
-                  style={[styles.button, isSmallDevice && styles.buttonSmall]}
+                  style={[
+                    styles.button,
+                    getButtonPadding(),
+                    isSmallDevice && { width: "100%" },
+                  ]}
                 >
                   <Text
                     style={[
                       styles.buttonText,
-                      isSmallDevice && styles.buttonTextSmall,
+                      { fontSize: getButtonFontSize() },
                     ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
                     {slide.buttonText}
                   </Text>
@@ -199,7 +249,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   slideContent: {
     position: "absolute",
@@ -211,18 +261,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.white,
     marginBottom: spacing.sm,
-    lineHeight: 38,
   },
   slideSubtitle: {
     color: colors.white,
     marginBottom: spacing.lg,
     opacity: 0.9,
-    lineHeight: 22,
   },
   emailInput: {
-    flexDirection: "row",
     backgroundColor: colors.white,
-    borderRadius: 25,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -230,39 +276,18 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  emailInputSmall: {
-    flexDirection: "column",
-    borderRadius: 15,
-  },
   input: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  inputSmall: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 12,
+    // color: colors.textPrimary,
   },
   button: {
     backgroundColor: colors.black,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
     justifyContent: "center",
-  },
-  buttonSmall: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    alignItems: "center",
   },
   buttonText: {
     color: colors.white,
-    fontSize: 14,
     fontWeight: "600",
-  },
-  buttonTextSmall: {
-    fontSize: 12,
   },
   pagination: {
     flexDirection: "row",

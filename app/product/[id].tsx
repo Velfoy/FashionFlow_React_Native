@@ -1,13 +1,16 @@
-// app/product/[id].tsx - FULLY RESPONSIVE VERSION
+// app/product/[id].tsx - UPDATED VERSION WITH WORKING CART
 import HeaderNav from "@/components/HeaderNav";
+import { addToCart } from "@/data/mockData";
 import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -17,20 +20,155 @@ import {
   View,
 } from "react-native";
 
-const images = [
-  "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=500&h=500&fit=crop",
-  "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=500&h=500&fit=crop",
-  "https://images.unsplash.com/photo-1546587348-d12660c30c50?w=500&h=500&fit=crop",
-  "https://images.unsplash.com/photo-1499364786053-c25f0d1e039f?w=500&h=500&fit=crop",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop",
+// Mock data - using the same data structure from your recommended products
+const products = [
+  {
+    id: 1,
+    image:
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop&auto=format",
+    name: "Nike Air Max 270",
+    brand: "Nike",
+    price: 2499,
+    oldPrice: 4999,
+    rating: 5.0,
+    isNew: true,
+    description:
+      "Experience unparalleled comfort and style with the Nike Air Max 270. Featuring the largest Air Max unit yet, these shoes provide maximum cushioning for all-day wear. The lightweight, breathable upper and innovative outsole design make them perfect for both athletic activities and casual wear.",
+    color: "black/white",
+    material: "synthetic mesh",
+    condition: "new",
+    views: 149,
+    images: [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1546587348-d12660c30c50?w=500&h=500&fit=crop",
+    ],
+    tags: [
+      "👟 running shoes",
+      "⭐ premium",
+      "💨 air max technology",
+      "🏃 athletic",
+    ],
+  },
+  {
+    id: 2,
+    image:
+      "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400&h=400&fit=crop&auto=format",
+    name: "Adidas Ultraboost",
+    brand: "Adidas",
+    price: 2199,
+    oldPrice: 4599,
+    rating: 4.8,
+    isNew: true,
+    description:
+      "The Adidas Ultraboost combines responsive cushioning with a sleek, modern design. Featuring Boost midsole technology for exceptional energy return and a Primeknit upper for adaptive fit and comfort. Perfect for runners and style enthusiasts alike.",
+    color: "core black",
+    material: "primeknit",
+    condition: "new",
+    views: 203,
+    images: [
+      "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1499364786053-c25f0d1e039f?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop",
+    ],
+    tags: [
+      "👟 boost technology",
+      "🎯 performance",
+      "💫 energy return",
+      "🏃 running",
+    ],
+  },
+  {
+    id: 3,
+    image:
+      "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=400&h=400&fit=crop&auto=format",
+    name: "Puma RS-X",
+    brand: "Puma",
+    price: 1899,
+    oldPrice: 3999,
+    rating: 4.5,
+    isNew: false,
+    description:
+      "Bold and futuristic, the Puma RS-X brings retro-inspired design with modern comfort. The chunky silhouette and mixed-material upper create a unique street-style look, while the comfortable cushioning ensures all-day wearability.",
+    color: "multi-color",
+    material: "synthetic leather",
+    condition: "new",
+    views: 87,
+    images: [
+      "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&h=500&fit=crop",
+    ],
+    tags: ["👟 retro style", "🎨 colorful", "🛸 futuristic", "🚶 casual wear"],
+  },
+  {
+    id: 4,
+    image:
+      "https://images.unsplash.com/photo-1605348532760-6753d2c43329?w=400&h=400&fit=crop&auto=format",
+    name: "New Balance 574",
+    brand: "New Balance",
+    price: 1999,
+    oldPrice: 4299,
+    rating: 4.7,
+    isNew: true,
+    description:
+      "A timeless classic reimagined for modern comfort. The New Balance 574 features ENCAP midsole technology for superior support and durability. The versatile design transitions seamlessly from casual outings to light athletic activities.",
+    color: "grey",
+    material: "suede/mesh",
+    condition: "new",
+    views: 124,
+    images: [
+      "https://images.unsplash.com/photo-1605348532760-6753d2c43329?w=500&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=500&h=500&fit=crop",
+    ],
+    tags: ["👟 classic", "💎 durable", "🎯 versatile", "🚶 everyday wear"],
+  },
 ];
 
-const reviews = Array(11).fill({
-  name: "Valeriia Zlydar",
-  rating: 5,
-  text: "Lorem ipsum lorem ipsum lorem ipsum...Lorem ipsum lorem ipsum lorem ipsum.",
-  date: "24 marca 2025",
-});
+// Mock reviews data
+const reviews = [
+  {
+    id: 1,
+    productId: 1,
+    name: "Valeriia Zlydar",
+    rating: 5,
+    text: "Absolutely love these shoes! The comfort is unbelievable and they look even better in person. Perfect for both workouts and casual wear.",
+    date: "24 marca 2025",
+    avatar:
+      "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=500&h=500&fit=crop",
+  },
+  {
+    id: 2,
+    productId: 1,
+    name: "John Smith",
+    rating: 4,
+    text: "Great shoes overall. Very comfortable and good looking. The sizing was perfect for me. Would recommend!",
+    date: "20 marca 2025",
+    avatar:
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&h=500&fit=crop",
+  },
+  {
+    id: 3,
+    productId: 1,
+    name: "Sarah Johnson",
+    rating: 5,
+    text: "Best purchase I've made this year! The quality exceeds expectations and they're so comfortable for all-day wear.",
+    date: "18 marca 2025",
+    avatar:
+      "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=500&h=500&fit=crop",
+  },
+  ...Array.from({ length: 8 }, (_, i) => ({
+    id: i + 4,
+    productId: 1,
+    name: `Customer ${i + 1}`,
+    rating: Math.floor(Math.random() * 2) + 4,
+    text: `Excellent quality and comfort. The shoes are exactly as described and very comfortable for daily use. Highly recommended! Review ${
+      i + 4
+    }.`,
+    date: `${i + 15} marca 2025`,
+    avatar: `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop&${i}`,
+  })),
+];
 
 export default function ProductDetailPage() {
   const { id } = useLocalSearchParams();
@@ -42,6 +180,26 @@ export default function ProductDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [comment, setComment] = useState("");
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  const [product, setProduct] = useState<any>(null);
+  const [productReviews, setProductReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [displayedReviewsCount, setDisplayedReviewsCount] = useState(5);
+
+  // Load product data based on ID
+  useEffect(() => {
+    const productId = parseInt(Array.isArray(id) ? id[0] : id || "1");
+    const foundProduct = products.find((p) => p.id === productId);
+
+    if (foundProduct) {
+      setProduct(foundProduct);
+      const productReviews = reviews.filter(
+        (review) => review.productId === productId
+      );
+      setProductReviews(productReviews);
+    }
+
+    setLoading(false);
+  }, [id]);
 
   const openPopup = (index: number) => {
     setCurrentImageIndex(index);
@@ -49,11 +207,57 @@ export default function ProductDetailPage() {
   };
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    if (!product) return;
+    setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    if (!product) return;
+    setCurrentImageIndex((prev) =>
+      prev === 0 ? product.images.length - 1 : prev - 1
+    );
+  };
+
+  const handleAddComment = () => {
+    if (!comment.trim() || !product) return;
+
+    const newReview = {
+      id: Date.now(),
+      productId: product.id,
+      name: "You",
+      rating: 5,
+      text: comment,
+      date: new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      avatar:
+        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&h=500&fit=crop",
+    };
+
+    setProductReviews((prev) => [newReview, ...prev]);
+    setComment("");
+    Alert.alert("Success", "Your review has been added!");
+  };
+
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    addToCart(product, quantity, selectedSize);
+    Alert.alert(
+      "Added to Cart",
+      `${quantity} x ${product.name} (${selectedSize}) has been added to your cart!`,
+      [
+        { text: "Continue Shopping", style: "cancel" },
+        { text: "View Cart", onPress: () => router.push("/(tabs)/cart") },
+      ]
+    );
+  };
+
+  const loadMoreReviews = () => {
+    const newCount = displayedReviewsCount + 5;
+    setDisplayedReviewsCount(newCount);
   };
 
   // Responsive image sizes
@@ -76,6 +280,34 @@ export default function ProductDetailPage() {
   // Layout direction based on orientation
   const useVerticalLayout = !isLandscape || !isTablet;
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <HeaderNav showLogo={false} showBack={true} title="Product Details" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.black} />
+          <Text style={styles.loadingText}>Loading product...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!product) {
+    return (
+      <View style={styles.container}>
+        <HeaderNav showLogo={false} showBack={true} title="Product Details" />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Product not found</Text>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  const displayedReviews = productReviews.slice(0, displayedReviewsCount);
+
   return (
     <View style={styles.container}>
       <HeaderNav showLogo={false} showBack={true} title="Product Details" />
@@ -83,7 +315,7 @@ export default function ProductDetailPage() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={
           isLandscape && !isTablet && { paddingBottom: spacing.xl }
-        } // ADD THIS
+        }
       >
         {/* Top Details - Responsive Layout */}
         <View
@@ -99,7 +331,7 @@ export default function ProductDetailPage() {
             style={[
               styles.detailsImages,
               useVerticalLayout && styles.detailsImagesVertical,
-              isLandscape && !isTablet && styles.detailsImagesLandscapePhone, // NEW
+              isLandscape && !isTablet && styles.detailsImagesLandscapePhone,
             ]}
           >
             {/* Small Images */}
@@ -110,13 +342,13 @@ export default function ProductDetailPage() {
               style={[
                 styles.leftImages,
                 useVerticalLayout && styles.leftImagesHorizontal,
-                isLandscape && !isTablet && styles.leftImagesLandscapePhone, // NEW
+                isLandscape && !isTablet && styles.leftImagesLandscapePhone,
               ]}
               contentContainerStyle={
                 useVerticalLayout && styles.leftImagesContent
               }
             >
-              {images.slice(1).map((img, index) => (
+              {product.images.slice(1).map((img: string, index: number) => (
                 <Pressable key={index} onPress={() => openPopup(index + 1)}>
                   <Image
                     source={img}
@@ -128,7 +360,7 @@ export default function ProductDetailPage() {
                       },
                       isLandscape &&
                         !isTablet &&
-                        styles.imageStandardLandscapePhone, // NEW
+                        styles.imageStandardLandscapePhone,
                     ]}
                   />
                 </Pressable>
@@ -138,7 +370,7 @@ export default function ProductDetailPage() {
             {/* Big Image */}
             <Pressable onPress={() => openPopup(0)}>
               <Image
-                source={images[0]}
+                source={product.images[0]}
                 style={[
                   styles.rightBigImage,
                   {
@@ -147,13 +379,13 @@ export default function ProductDetailPage() {
                   },
                   isLandscape &&
                     !isTablet &&
-                    styles.rightBigImageLandscapePhone, // NEW
+                    styles.rightBigImageLandscapePhone,
                 ]}
               />
             </Pressable>
           </View>
 
-          {/* Cart Details - UPDATED for better landscape phone visibility */}
+          {/* Cart Details */}
           <View
             style={[
               styles.cartDetails,
@@ -163,14 +395,20 @@ export default function ProductDetailPage() {
           >
             <View style={styles.cartInfo}>
               <View style={styles.cartRating}>
-                <Text style={styles.ratingStar}>⭐ 4.9 - </Text>
-                <Text style={styles.amountOfViews}>149 views</Text>
+                <Text style={styles.ratingStar}>⭐ {product.rating} - </Text>
+                <Text style={styles.amountOfViews}>{product.views} views</Text>
               </View>
               <View style={styles.cartPricing}>
-                <Text style={styles.currentPrice}>$2499.00</Text>
-                <Text style={styles.firstPrice}>$4999.00</Text>
+                <Text style={styles.currentPrice}>
+                  ${product.price.toFixed(2)}
+                </Text>
+                <Text style={styles.firstPrice}>
+                  ${product.oldPrice.toFixed(2)}
+                </Text>
               </View>
             </View>
+
+            <Text style={styles.brandText}>By {product.brand}</Text>
 
             <Text style={styles.sizeChosen}>Size: {selectedSize}</Text>
 
@@ -225,6 +463,7 @@ export default function ProductDetailPage() {
                   styles.addToCartButton,
                   isLandscape && !isTablet && styles.addToCartButtonCompact,
                 ]}
+                onPress={handleAddToCart}
               >
                 <Ionicons name="cart-outline" size={16} color={colors.white} />
                 <Text style={styles.addToCartButtonText}>Add to cart</Text>
@@ -234,9 +473,11 @@ export default function ProductDetailPage() {
             {/* Price Summary */}
             <View style={styles.priceAll}>
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>$2499.00</Text>
+                <Text style={styles.priceLabel}>
+                  ${product.price.toFixed(2)}
+                </Text>
                 <Text style={styles.priceValue}>
-                  ${(2499 * quantity).toFixed(2)}
+                  ${(product.price * quantity).toFixed(2)}
                 </Text>
               </View>
               <View style={styles.priceRow}>
@@ -246,60 +487,52 @@ export default function ProductDetailPage() {
               <View style={[styles.priceRow, styles.priceTotal]}>
                 <Text style={styles.priceTotalLabel}>Total</Text>
                 <Text style={styles.priceTotalValue}>
-                  ${(2499 * quantity).toFixed(2)}
+                  ${(product.price * quantity).toFixed(2)}
                 </Text>
               </View>
             </View>
           </View>
         </View>
 
-        {/* Second Details - Responsive padding */}
+        {/* Second Details */}
         <View
           style={[styles.secondDetails, isTablet && styles.secondDetailsTablet]}
         >
           <Text
             style={[styles.productTitle, isTablet && styles.productTitleTablet]}
           >
-            Black watch Omega yg87JF
+            {product.name}
           </Text>
-          <Text style={styles.productDescription}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut
-            imperdiet finibus...Lorem ipsum dolor sit amet, consectetur
-            adipiscing elit. Ut imperdiet finibus...Lorem ipsum dolor sit amet,
-            consectetur adipiscing elit.
-          </Text>
+          <Text style={styles.productDescription}>{product.description}</Text>
 
           <Text style={styles.sectionTitle}>Details</Text>
           <View style={styles.productMeta}>
             <Text style={styles.metaText}>
-              <Text style={styles.metaBold}>Color:</Text> black
+              <Text style={styles.metaBold}>Color:</Text> {product.color}
             </Text>
             <Text style={styles.metaText}>
-              <Text style={styles.metaBold}>Material:</Text> leather
+              <Text style={styles.metaBold}>Material:</Text> {product.material}
             </Text>
             <Text style={styles.metaText}>
-              <Text style={styles.metaBold}>Condition:</Text> max
+              <Text style={styles.metaBold}>Condition:</Text>{" "}
+              {product.condition}
+            </Text>
+            <Text style={styles.metaText}>
+              <Text style={styles.metaBold}>Brand:</Text> {product.brand}
             </Text>
           </View>
 
           <Text style={styles.sectionTitle}>Keywords</Text>
           <View style={styles.productTags}>
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>🧢 men's fashion</Text>
-            </View>
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>❄ winter hat</Text>
-            </View>
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>🎨 colorful accessory</Text>
-            </View>
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>🔥 warm headwear</Text>
-            </View>
+            {product.tags.map((tag: string, index: number) => (
+              <View key={index} style={styles.tag}>
+                <Text style={styles.tagText}>{tag}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
-        {/* Comments Section - Responsive */}
+        {/* Comments Section */}
         <View
           style={[
             styles.commentsSection,
@@ -315,9 +548,9 @@ export default function ProductDetailPage() {
             <View>
               <Text style={styles.commentsTitle}>Customer reviews</Text>
               <Text style={styles.commentsRating}>
-                ★★★★★{" "}
+                {"★".repeat(5)}{" "}
                 <Text style={styles.reviewCount}>
-                  ({reviews.length} reviews)
+                  ({productReviews.length} reviews)
                 </Text>
               </Text>
             </View>
@@ -328,45 +561,77 @@ export default function ProductDetailPage() {
 
           <TextInput
             style={styles.commentInput}
-            placeholder="Comment"
+            placeholder="Add your review..."
             value={comment}
             onChangeText={setComment}
             multiline
+            numberOfLines={4}
           />
 
-          <Text style={styles.reviewsTitle}>{reviews.length} reviews</Text>
-          {reviews.slice(0, isTablet ? 11 : 5).map((review, i) => (
-            <View key={i} style={styles.commentItem}>
-              <Image
-                source="https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=500&h=500&fit=crop"
-                style={styles.commentAvatar}
-              />
+          <Pressable
+            style={[
+              styles.submitCommentButton,
+              !comment.trim() && styles.submitCommentButtonDisabled,
+            ]}
+            onPress={handleAddComment}
+            disabled={!comment.trim()}
+          >
+            <Text style={styles.submitCommentButtonText}>Submit Review</Text>
+          </Pressable>
+
+          <Text style={styles.reviewsTitle}>
+            {displayedReviews.length} reviews
+          </Text>
+
+          {displayedReviews.map((review, i) => (
+            <View key={review.id} style={styles.commentItem}>
+              <Image source={review.avatar} style={styles.commentAvatar} />
               <View style={styles.commentContent}>
                 <View style={styles.commentHeader}>
                   <Text style={styles.commentName}>{review.name}</Text>
-                  <Text style={styles.commentStars}>★★★★★</Text>
-                  <Pressable
-                    onPress={() =>
-                      setOpenDropdown(openDropdown === i ? null : i)
-                    }
-                  >
-                    <Ionicons
-                      name="ellipsis-vertical"
-                      size={18}
-                      color={colors.textSecondary}
-                    />
-                  </Pressable>
+                  <Text style={styles.commentStars}>
+                    {"★".repeat(review.rating)}
+                  </Text>
+                  {review.name === "You" && (
+                    <Pressable
+                      onPress={() =>
+                        setOpenDropdown(
+                          openDropdown === review.id ? null : review.id
+                        )
+                      }
+                    >
+                      <Ionicons
+                        name="ellipsis-vertical"
+                        size={18}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                  )}
                 </View>
                 <Text style={styles.commentText}>{review.text}</Text>
                 <Text style={styles.commentDate}>{review.date}</Text>
 
-                {openDropdown === i && (
+                {openDropdown === review.id && (
                   <View style={styles.dropdownMenu}>
-                    <Pressable style={styles.dropdownItem}>
+                    <Pressable
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setComment(review.text);
+                        setOpenDropdown(null);
+                      }}
+                    >
                       <Text>Edit</Text>
                     </Pressable>
-                    <Pressable style={styles.dropdownItem}>
-                      <Text>Delete</Text>
+                    <Pressable
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setProductReviews((prev) =>
+                          prev.filter((r) => r.id !== review.id)
+                        );
+                        setOpenDropdown(null);
+                      }}
+                    >
+                      <Text style={styles.deleteText}>Delete</Text>
                     </Pressable>
                   </View>
                 )}
@@ -374,11 +639,13 @@ export default function ProductDetailPage() {
             </View>
           ))}
 
-          <Pressable style={styles.loadMoreButton}>
-            <Text style={styles.loadMoreButtonText}>
-              {isTablet ? "Load More Reviews" : "Więcej"}
-            </Text>
-          </Pressable>
+          {productReviews.length > displayedReviewsCount && (
+            <Pressable style={styles.loadMoreButton} onPress={loadMoreReviews}>
+              <Text style={styles.loadMoreButtonText}>
+                {isTablet ? "Load More Reviews" : "Load More"}
+              </Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
 
@@ -400,7 +667,7 @@ export default function ProductDetailPage() {
           </Pressable>
 
           <Image
-            source={images[currentImageIndex]}
+            source={product.images[currentImageIndex]}
             style={[
               styles.popupImage,
               {
@@ -418,7 +685,7 @@ export default function ProductDetailPage() {
           </Pressable>
 
           <Text style={styles.popupCounter}>
-            {currentImageIndex + 1} / {images.length}
+            {currentImageIndex + 1} / {product.images.length}
           </Text>
         </View>
       </Modal>
@@ -431,7 +698,39 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  // TOP DETAILS - RESPONSIVE
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: spacing.xl,
+  },
+  errorText: {
+    fontSize: 18,
+    color: colors.error,
+    marginBottom: spacing.lg,
+  },
+  backButton: {
+    backgroundColor: colors.black,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  // ... (keep all the existing styles from your original file)
   topDetails: {
     flexDirection: "column",
     padding: spacing.md,
@@ -447,14 +746,13 @@ const styles = StyleSheet.create({
   topDetailsTablet: {
     paddingHorizontal: spacing.xxl,
   },
-  // IMAGES SECTION - RESPONSIVE
   detailsImages: {
     flexDirection: "row",
     gap: spacing.md,
     alignItems: "center",
   },
   detailsImagesVertical: {
-    flexDirection: "column-reverse", // Big image on top, small images below
+    flexDirection: "column-reverse",
   },
   leftImages: {
     flexDirection: "column",
@@ -475,7 +773,6 @@ const styles = StyleSheet.create({
   rightBigImage: {
     borderRadius: 15,
   },
-  // CART DETAILS - RESPONSIVE
   cartDetails: {
     backgroundColor: colors.white,
     borderRadius: 18,
@@ -500,7 +797,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     flexWrap: "wrap",
   },
   cartRating: {
@@ -529,6 +826,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textDecorationLine: "line-through",
     color: colors.textSecondary,
+  },
+  brandText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    fontStyle: "italic",
   },
   sizeChosen: {
     fontSize: 15,
@@ -661,7 +964,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  // SECOND DETAILS - RESPONSIVE
   secondDetails: {
     padding: spacing.lg,
   },
@@ -712,7 +1014,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
   },
-  // COMMENTS SECTION - RESPONSIVE
   commentsSection: {
     padding: spacing.lg,
   },
@@ -760,7 +1061,23 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     minHeight: 100,
     fontSize: 15,
+    marginBottom: spacing.md,
+  },
+  submitCommentButton: {
+    backgroundColor: colors.black,
+    paddingVertical: spacing.md,
+    borderRadius: 12,
+    alignItems: "center",
     marginBottom: spacing.lg,
+  },
+  submitCommentButtonDisabled: {
+    backgroundColor: colors.gray,
+    opacity: 0.6,
+  },
+  submitCommentButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "600",
   },
   reviewsTitle: {
     fontSize: 18,
@@ -823,6 +1140,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
+  deleteText: {
+    color: colors.error,
+  },
   loadMoreButton: {
     alignSelf: "center",
     backgroundColor: colors.white,
@@ -841,7 +1161,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  // IMAGE POPUP - RESPONSIVE
   imagePopupOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.92)",
@@ -884,38 +1203,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   detailsImagesLandscapePhone: {
-    maxHeight: 250, // Limit height to ensure cart is visible
+    maxHeight: 250,
     marginBottom: spacing.sm,
   },
   leftImagesLandscapePhone: {
     maxHeight: 200,
   },
   imageStandardLandscapePhone: {
-    width: 60, // Smaller thumbnails in landscape phone
+    width: 60,
     height: 60,
   },
   rightBigImageLandscapePhone: {
-    maxHeight: 200, // Limit big image height
+    maxHeight: 200,
   },
-
-  // // ENHANCE EXISTING LANDSCAPE PHONE STYLES
-  // cartDetailsLandscapePhone: {
-  //   flex: 1,
-  //   padding: spacing.md,
-  //   maxHeight: 380, // Ensure it doesn't overflow
-  //   marginTop: spacing.sm,
-  // },
-
-  // // IMPROVE TOP CONTAINER FOR LANDSCAPE
-  // topDetailsLandscape: {
-  //   flexDirection: "row",
-  //   paddingHorizontal: spacing.xl,
-  //   alignItems: "flex-start", // Align items to top
-  // },
-
-  // // ENSURE SCROLLVIEW WORKS PROPERLY
-  // container: {
-  //   flex: 1,
-  //   backgroundColor: colors.background,
-  // },
 });

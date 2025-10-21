@@ -59,7 +59,7 @@ export default function RecommendedProducts() {
       <View style={styles.recommendedHeader}>
         <Text style={styles.headerTitle}>Recommended products</Text>
         <Pressable>
-          <Text style={styles.allDeals}>All Details →</Text>
+          <Text style={styles.allDeals}>All Products →</Text>
         </Pressable>
       </View>
 
@@ -83,7 +83,12 @@ export default function RecommendedProducts() {
               />
               <Pressable
                 style={styles.cartBtn}
-                onPress={() => router.push("/cart")}
+                onPress={() =>
+                  router.push({
+                    pathname: "/product/[id]",
+                    params: { id: product.id },
+                  })
+                }
               >
                 <Ionicons name="cart" size={16} color={colors.black} />
               </Pressable>

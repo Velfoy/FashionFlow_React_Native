@@ -1,6 +1,8 @@
-import { useResponsive } from "@/hooks/useResponsive"; // Adjust the import path as needed
+import { useCategory } from "@/contexts/CategoryContext"; // Add this import
+import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
+import { useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 import React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -11,65 +13,86 @@ const categories = [
     items: 26,
     image:
       "https://images.unsplash.com/photo-1542272604-787c3835535d?w=200&h=200&fit=crop&auto=format",
+    targetTab: "Products",
   },
   {
     name: "Shorts",
     items: 23,
     image:
       "https://images.unsplash.com/photo-1506629905607-e48b0e67d879?w=200&h=200&fit=crop&auto=format",
+    targetTab: "Products",
   },
   {
     name: "T-shirts",
     items: 54,
     image:
       "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop&auto=format",
+    targetTab: "Products",
   },
   {
     name: "Suits",
     items: 51,
     image:
       "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&h=200&fit=crop&auto=format",
+    targetTab: "Products",
   },
   {
     name: "Leggings",
     items: 56,
     image:
       "https://images.unsplash.com/photo-1506629905607-e48b0e67d879?w=200&h=200&fit=crop&auto=format",
+    targetTab: "Products",
   },
   {
     name: "Cardigans",
     items: 72,
     image:
       "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=200&h=200&fit=crop&auto=format",
+    targetTab: "Products",
   },
   {
     name: "Sneakers",
     items: 36,
     image:
       "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&h=200&fit=crop&auto=format",
+    targetTab: "Products",
   },
   {
     name: "Sandals",
     items: 123,
     image:
       "https://images.unsplash.com/photo-1542280756-74b2f55e73ab?w=200&h=200&fit=crop&auto=format",
+    targetTab: "Products",
   },
   {
     name: "Jackets",
     items: 34,
     image:
       "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=200&h=200&fit=crop&auto=format",
+    targetTab: "Products",
   },
   {
     name: "Accessories",
     items: 89,
     image:
       "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&h=200&fit=crop&auto=format",
+    targetTab: "Products",
   },
 ];
 
 export default function FeaturedCategories() {
+  const navigation = useNavigation();
+  const { setSelectedCategory } = useCategory(); // Add this hook
   const { width, isSmallDevice, isTablet, isLargeDevice } = useResponsive();
+
+  // Handle category press
+  const handleCategoryPress = (category: (typeof categories)[0]) => {
+    // Set the selected category in context
+    setSelectedCategory(category.name);
+
+    // Navigate to Products tab
+    navigation.navigate("products" as never);
+  };
 
   // Responsive card size calculation
   const getCardSize = () => {
@@ -94,24 +117,6 @@ export default function FeaturedCategories() {
         >
           Featured Categories
         </Text>
-
-        {/* Responsive tabs - hide on small devices */}
-        {!isSmallDevice && (
-          <View style={styles.featuredTabs}>
-            <Pressable style={styles.activeTab}>
-              <Text style={styles.activeTabText}>Hats</Text>
-            </Pressable>
-            <Pressable style={styles.tab}>
-              <Text style={styles.tabText}>Shoes</Text>
-            </Pressable>
-            <Pressable style={styles.tab}>
-              <Text style={styles.tabText}>T-shirts</Text>
-            </Pressable>
-            <Pressable style={styles.tab}>
-              <Text style={styles.tabText}>Pants</Text>
-            </Pressable>
-          </View>
-        )}
       </View>
 
       {/* Show tabs below header on small devices */}
@@ -146,13 +151,16 @@ export default function FeaturedCategories() {
         ]}
       >
         {categories.map((cat, index) => (
-          <View
+          <Pressable
             key={index}
-            style={[
+            onPress={() => handleCategoryPress(cat)}
+            style={({ pressed }) => [
               styles.featuredCard,
               {
                 minWidth: cardSize.width,
                 padding: isSmallDevice ? spacing.md : spacing.lg,
+                opacity: pressed ? 0.7 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
           >
@@ -183,7 +191,7 @@ export default function FeaturedCategories() {
             >
               {cat.items} Items
             </Text>
-          </View>
+          </Pressable>
         ))}
       </ScrollView>
     </View>

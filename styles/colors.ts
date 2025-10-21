@@ -15,4 +15,6 @@ export const colors = {
   orange: "#f9b233",
   green: "#00C853",
   error: "#FF0000",
+  success: "#28a745",
+  successLight: "#d4edda",
 };

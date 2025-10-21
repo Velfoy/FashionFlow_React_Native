@@ -1,3 +1,4 @@
+import { CategoryProvider } from "@/contexts/CategoryContext"; // Add this import
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   DarkTheme,
@@ -21,16 +22,20 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.container}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <SafeAreaProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="product/[id]" />
-            <Stack.Screen name="auth/login" />
-          </Stack>
+          <CategoryProvider>
+            {/* Add this wrapper */}
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="product/[id]" />
+              <Stack.Screen name="auth/login" />
+            </Stack>
+          </CategoryProvider>
         </SafeAreaProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

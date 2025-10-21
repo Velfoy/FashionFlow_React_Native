@@ -1,13 +1,20 @@
-// app/(tabs)/cart.tsx - FULLY RESPONSIVE VERSION
+// app/(tabs)/cart.tsx - UPDATED VERSION
 import HeaderNav from "@/components/HeaderNav";
+import {
+  CartItem,
+  getCartItems,
+  removeFromCart,
+  updateCartItemQuantity,
+} from "@/data/mockData";
 import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/styles/colors";
 import { spacing } from "@/styles/spacing";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,76 +23,224 @@ import {
   View,
 } from "react-native";
 
-const sellers = [
+// Types (keep your existing types, just update interfaces as needed)
+interface Seller {
+  id: number;
+  name: string;
+  products: CartItem[];
+}
+
+interface CheckedProduct {
+  productId: number;
+  checked: boolean;
+}
+
+interface CheckedSeller {
+  sellerId: number;
+  checked: boolean;
+  products: CheckedProduct[];
+}
+
+interface Address {
+  name: string;
+  phone: string;
+  email: string;
+  deliveryPoint: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+}
+
+interface ShippingMethod {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  deliveryDays: string;
+}
+
+interface PaymentMethod {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+// Mock data (keep your existing mock data, just update sellers to use cart items)
+const sellersFromCart = (cartItems: CartItem[]): Seller[] => {
+  // Group cart items by seller (in a real app, you'd have seller info)
+  const sellerMap: { [key: string]: CartItem[] } = {};
+
+  cartItems.forEach((item) => {
+    // For demo, we'll create sellers based on product categories
+    const sellerName = item.name.includes("watch")
+      ? "Seny"
+      : item.name.includes("pants")
+      ? "Selle"
+      : item.name.includes("jacket")
+      ? "Premium Store"
+      : "General Store";
+
+    if (!sellerMap[sellerName]) {
+      sellerMap[sellerName] = [];
+    }
+    sellerMap[sellerName].push(item);
+  });
+
+  return Object.entries(sellerMap).map(([name, products], index) => ({
+    id: index + 1,
+    name,
+    products,
+  }));
+};
+
+const shippingMethods: ShippingMethod[] = [
   {
-    id: 1,
-    name: "Seny",
-    products: [
-      {
-        id: 1,
-        name: "Dziewczęce, dzianinowe, kontrastowe, luźne, sportowe, swobodne spodnie",
-        price: 2499.0,
-        oldPrice: 4999.0,
-        image: "https://via.placeholder.com/300x300/007bff/ffffff?text=Shoes",
-      },
-    ],
+    id: "method-0",
+    name: "InPost Paczkomat 24/7",
+    price: 9.9,
+    description: "Fast delivery to parcel locker",
+    deliveryDays: "Poniedziałek, Kwi 7 – Środa, Kwi 9",
   },
   {
-    id: 2,
-    name: "Selle",
-    products: [
-      {
-        id: 2,
-        name: "Dziewczęce, dzianinowe, kontrastowe, luźne, sportowe, swobodne spodnie",
-        price: 2499.0,
-        oldPrice: 4999.0,
-        image: "https://via.placeholder.com/300x300/28a745/ffffff?text=Shoes",
-      },
-      {
-        id: 3,
-        name: "Dziewczęce, dzianinowe, kontrastowe, luźne, sportowe, swobodne spodnie",
-        price: 2499.0,
-        oldPrice: 4999.0,
-        image: "https://via.placeholder.com/300x300/dc3545/ffffff?text=Shoes",
-      },
-    ],
+    id: "method-1",
+    name: "DPD Courier",
+    price: 14.9,
+    description: "Door delivery",
+    deliveryDays: "Wtorek, Kwi 8 – Czwartek, Kwi 10",
+  },
+  {
+    id: "method-2",
+    name: "Poczta Polska",
+    price: 7.9,
+    description: "Post office delivery",
+    deliveryDays: "Środa, Kwi 9 – Piątek, Kwi 11",
   },
 ];
 
+const paymentMethods: PaymentMethod[] = [
+  {
+    id: "payment-0",
+    name: "Credit Card",
+    description: "Pay with Visa, MasterCard",
+    icon: "card-outline",
+  },
+  {
+    id: "payment-1",
+    name: "Bank Transfer",
+    description: "Traditional bank transfer",
+    icon: "business-outline",
+  },
+  {
+    id: "payment-2",
+    name: "PayPal",
+    description: "Fast and secure payment",
+    icon: "logo-paypal",
+  },
+];
+
+// Breadcrumb steps
+const BREADCRUMB_STEPS = [
+  { key: "cart", label: "Cart" },
+  { key: "place-order", label: "Place Order" },
+  { key: "pay", label: "Pay" },
+  { key: "completed", label: "Order Completed" },
+];
+
+type Step = "cart" | "place-order" | "pay" | "completed";
+
 export default function CartPage() {
   const { isTablet, isLandscape, width } = useResponsive();
+  const [currentStep, setCurrentStep] = useState<Step>("cart");
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
 
-  const [checkedState, setCheckedState] = useState(() =>
-    sellers.map((seller) => ({
+  const [checkedState, setCheckedState] = useState<CheckedSeller[]>([]);
+  const [allCompaniesChecked, setAllCompaniesChecked] = useState(true);
+  const [selectedShipping, setSelectedShipping] = useState("method-0");
+  const [selectedPayment, setSelectedPayment] = useState("payment-0");
+  const [isEditing, setIsEditing] = useState(false);
+  const [address, setAddress] = useState<Address>({
+    name: "Valeriia Zlydar",
+    phone: "883589324",
+    email: "marsonyteam@gmail.com",
+    deliveryPoint: "LOD51N al. Politechniki 1",
+    address: "al. Politechniki",
+    city: "Łódź",
+    postalCode: "93-590",
+    country: "Poland",
+  });
+
+  // Load cart items and initialize sellers
+  useEffect(() => {
+    loadCartItems();
+  }, []);
+
+  const loadCartItems = () => {
+    const items = getCartItems();
+    setCartItems(items);
+    const sellersData = sellersFromCart(items);
+    setSellers(sellersData);
+
+    // Initialize checked state
+    const initialCheckedState: CheckedSeller[] = sellersData.map((seller) => ({
       sellerId: seller.id,
       checked: true,
       products: seller.products.map((p) => ({
         productId: p.id,
         checked: true,
       })),
-    }))
-  );
-  const [allCompaniesChecked, setAllCompaniesChecked] = useState(true);
-  const [checkoutComplete, setCheckoutComplete] = useState(false);
-  const [selectedShipping, setSelectedShipping] = useState("method-0");
-  const [selectedPayment, setSelectedPayment] = useState("payment-0");
-  const [quantities, setQuantities] = useState<Record<number, number>>(() => {
-    const initial: Record<number, number> = {};
-    sellers.forEach((seller) => {
-      seller.products.forEach((product) => {
-        initial[product.id] = 1;
+    }));
+
+    setCheckedState(initialCheckedState);
+  };
+
+  // Calculate selected items and totals
+  const { selectedProducts, subtotal, discount, shipping, total } =
+    React.useMemo(() => {
+      const selectedProducts: CartItem[] = [];
+      let subtotal = 0;
+      let discount = 0;
+
+      checkedState.forEach((sellerState) => {
+        const seller = sellers.find((s) => s.id === sellerState.sellerId);
+        if (seller) {
+          sellerState.products.forEach((productState) => {
+            if (productState.checked) {
+              const product = seller.products.find(
+                (p) => p.id === productState.productId
+              );
+              if (product) {
+                selectedProducts.push(product);
+                subtotal += product.price * product.quantity;
+                // For demo, we'll calculate a simple discount
+                discount += product.price * product.quantity * 0.1; // 10% discount
+              }
+            }
+          });
+        }
       });
-    });
-    return initial;
-  });
-  const [isEditing, setIsEditing] = useState(false);
-  const [address, setAddress] = useState({
-    name: "Valeriia Zlydar",
-    phone: "883589324",
-    email: "marsonyteam@gmail.com",
-    deliveryPoint: "LOD51N al. Politechniki 1",
-    address: "al. Politechniki Łódź łódzkie Poland 93-590",
-  });
+
+      const selectedShippingMethod = shippingMethods.find(
+        (method) => method.id === selectedShipping
+      );
+      const shippingCost = selectedShippingMethod?.price || 0;
+
+      return {
+        selectedProducts,
+        subtotal,
+        discount,
+        shipping: shippingCost,
+        total: subtotal - discount + shippingCost,
+      };
+    }, [checkedState, selectedShipping, sellers]);
+
+  // Update all companies checked state
+  useEffect(() => {
+    const allChecked = checkedState.every((seller) => seller.checked);
+    setAllCompaniesChecked(allChecked);
+  }, [checkedState]);
 
   const handleAllCompaniesToggle = () => {
     const newCheckedState = allCompaniesChecked
@@ -107,7 +262,6 @@ export default function CartPage() {
         }));
 
     setCheckedState(newCheckedState);
-    setAllCompaniesChecked(!allCompaniesChecked);
   };
 
   const handleSellerToggle = (sellerId: number) => {
@@ -140,11 +294,124 @@ export default function CartPage() {
     );
   };
 
+  const handleDeleteProduct = (sellerId: number, productId: number) => {
+    Alert.alert(
+      "Remove Item",
+      "Are you sure you want to remove this item from your cart?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            removeFromCart(productId);
+            loadCartItems(); // Reload cart items
+          },
+        },
+      ]
+    );
+  };
+
+  const handleQuantityChange = (productId: number, change: number) => {
+    const item = cartItems.find((item) => item.id === productId);
+    if (item) {
+      const newQuantity = Math.max(1, item.quantity + change);
+      updateCartItemQuantity(productId, newQuantity);
+      loadCartItems(); // Reload cart items to reflect changes
+    }
+  };
+
+  const handleCheckout = () => {
+    if (selectedProducts.length === 0) {
+      Alert.alert(
+        "Empty Cart",
+        "Please select at least one item to proceed with checkout."
+      );
+      return;
+    }
+    setCurrentStep("place-order");
+  };
+
+  const handlePlaceOrder = () => {
+    setCurrentStep("pay");
+  };
+
+  const handlePayment = () => {
+    setCurrentStep("completed");
+  };
+
+  const handleBackToCart = () => {
+    setCurrentStep("cart");
+  };
+
+  const handleBackToShipping = () => {
+    setCurrentStep("place-order");
+  };
+
+  const handleContinueShopping = () => {
+    router.push("/(tabs)");
+  };
+
+  const handleViewOrder = () => {
+    Alert.alert(
+      "Order Placed",
+      `Your order #${Math.random()
+        .toString(36)
+        .substr(2, 9)
+        .toUpperCase()} has been placed successfully!`
+    );
+  };
+
+  const handleSaveAddress = () => {
+    setIsEditing(false);
+    Alert.alert("Address Saved", "Your address has been updated successfully.");
+  };
+
+  const isStepActive = (stepKey: Step) => {
+    const stepIndex = BREADCRUMB_STEPS.findIndex(
+      (step) => step.key === stepKey
+    );
+    const currentIndex = BREADCRUMB_STEPS.findIndex(
+      (step) => step.key === currentStep
+    );
+    return stepIndex <= currentIndex;
+  };
+
+  const isStepCompleted = (stepKey: Step) => {
+    const stepIndex = BREADCRUMB_STEPS.findIndex(
+      (step) => step.key === stepKey
+    );
+    const currentIndex = BREADCRUMB_STEPS.findIndex(
+      (step) => step.key === currentStep
+    );
+    return stepIndex < currentIndex;
+  };
+
   // Determine layout based on device
-  // Phone always uses stacked layout for better visibility
-  const useSideBySideLayout = false; // Changed to always use stacked layout
+  const useSideBySideLayout = false;
   const cartMainFlex = 1;
   const orderSummaryFlex = 1;
+
+  if (cartItems.length === 0 && currentStep === "cart") {
+    return (
+      <View style={styles.container}>
+        <HeaderNav showLogo={false} title="Shopping Cart" showAccount={false} />
+        <View style={styles.emptyCartContainer}>
+          <Ionicons name="cart-outline" size={80} color={colors.gray} />
+          <Text style={styles.emptyCartTitle}>Your cart is empty</Text>
+          <Text style={styles.emptyCartText}>
+            Browse our products and add items to your cart
+          </Text>
+          <Pressable
+            style={styles.continueShoppingButton}
+            onPress={handleContinueShopping}
+          >
+            <Text style={styles.continueShoppingText}>Continue Shopping</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -156,11 +423,80 @@ export default function CartPage() {
           isTablet && styles.scrollContentTablet,
         ]}
       >
-        <Text style={styles.breadcrumb}>
-          Cart &gt; Place order &gt; Pay &gt; Order Completed
-        </Text>
+        {/* Breadcrumb */}
+        <View style={styles.breadcrumbContainer}>
+          {BREADCRUMB_STEPS.map((step, index) => (
+            <React.Fragment key={step.key}>
+              <Pressable
+                onPress={() => {
+                  if (
+                    isStepCompleted(step.key as Step) ||
+                    isStepActive(step.key as Step)
+                  ) {
+                    setCurrentStep(step.key as Step);
+                  }
+                }}
+                style={[
+                  styles.breadcrumbStep,
+                  isStepActive(step.key as Step) && styles.breadcrumbStepActive,
+                  isStepCompleted(step.key as Step) &&
+                    styles.breadcrumbStepCompleted,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.breadcrumbText,
+                    isStepActive(step.key as Step) &&
+                      styles.breadcrumbTextActive,
+                  ]}
+                >
+                  {step.label}
+                </Text>
+              </Pressable>
+              {index < BREADCRUMB_STEPS.length - 1 && (
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.gray}
+                />
+              )}
+            </React.Fragment>
+          ))}
+        </View>
 
-        {!checkoutComplete ? (
+        {currentStep === "completed" ? (
+          /* Order Completed View */
+          <View style={styles.completedContainer}>
+            <View style={styles.successIcon}>
+              <Ionicons
+                name="checkmark-circle"
+                size={80}
+                color={colors.success}
+              />
+            </View>
+            <Text style={styles.completedTitle}>Order Completed!</Text>
+            <Text style={styles.completedMessage}>
+              Thank you for your purchase. Your order has been confirmed and
+              will be shipped soon.
+            </Text>
+            <View style={styles.completedActions}>
+              <Pressable
+                style={styles.continueShoppingButton}
+                onPress={handleContinueShopping}
+              >
+                <Text style={styles.continueShoppingText}>
+                  Continue Shopping
+                </Text>
+              </Pressable>
+              <Pressable
+                style={styles.viewOrderButton}
+                onPress={handleViewOrder}
+              >
+                <Text style={styles.viewOrderText}>View Order Details</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
           <View
             style={[
               styles.cartAll,
@@ -174,90 +510,56 @@ export default function CartPage() {
                 useSideBySideLayout && { flex: cartMainFlex },
               ]}
             >
-              {/* All items header */}
-              <View style={styles.allItemsHeader}>
-                <Pressable
-                  onPress={handleAllCompaniesToggle}
-                  style={styles.checkboxContainer}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      allCompaniesChecked && styles.checkboxChecked,
-                    ]}
-                  >
-                    {allCompaniesChecked && (
-                      <Ionicons
-                        name="checkmark"
-                        size={14}
-                        color={colors.white}
-                      />
-                    )}
-                  </View>
-                </Pressable>
-                <Text style={styles.allItemsText}>
-                  ALL COMPANIES ({sellers.length})
-                </Text>
-              </View>
-
-              {/* Sellers */}
-              {checkedState.map((sellerState) => {
-                const seller = sellers.find(
-                  (s) => s.id === sellerState.sellerId
-                );
-
-                if (!seller) return null;
-
-                return (
-                  <View key={seller.id} style={styles.sellerSection}>
-                    <View style={styles.sellerHeader}>
-                      <Pressable
-                        onPress={() => handleSellerToggle(seller.id)}
-                        style={styles.checkboxContainer}
+              {currentStep === "cart" && (
+                <>
+                  {/* All items header */}
+                  <View style={styles.allItemsHeader}>
+                    <Pressable
+                      onPress={handleAllCompaniesToggle}
+                      style={styles.checkboxContainer}
+                    >
+                      <View
+                        style={[
+                          styles.checkbox,
+                          allCompaniesChecked && styles.checkboxChecked,
+                        ]}
                       >
-                        <View
-                          style={[
-                            styles.checkbox,
-                            sellerState.checked && styles.checkboxChecked,
-                          ]}
-                        >
-                          {sellerState.checked && (
-                            <Ionicons
-                              name="checkmark"
-                              size={14}
-                              color={colors.white}
-                            />
-                          )}
-                        </View>
-                      </Pressable>
-                      <Text style={styles.sellerName}>{seller.name}</Text>
-                    </View>
+                        {allCompaniesChecked && (
+                          <Ionicons
+                            name="checkmark"
+                            size={14}
+                            color={colors.white}
+                          />
+                        )}
+                      </View>
+                    </Pressable>
+                    <Text style={styles.allItemsText}>
+                      ALL COMPANIES ({sellers.length})
+                    </Text>
+                  </View>
 
-                    {seller.products.map((product) => {
-                      const productState = sellerState.products.find(
-                        (p) => p.productId === product.id
-                      );
-                      return (
-                        <View
-                          key={product.id}
-                          style={[
-                            styles.cartCard,
-                            isTablet && styles.cartCardTablet,
-                          ]}
-                        >
+                  {/* Sellers */}
+                  {checkedState.map((sellerState) => {
+                    const seller = sellers.find(
+                      (s) => s.id === sellerState.sellerId
+                    );
+
+                    if (!seller) return null;
+
+                    return (
+                      <View key={seller.id} style={styles.sellerSection}>
+                        <View style={styles.sellerHeader}>
                           <Pressable
-                            onPress={() =>
-                              handleProductToggle(seller.id, product.id)
-                            }
+                            onPress={() => handleSellerToggle(seller.id)}
                             style={styles.checkboxContainer}
                           >
                             <View
                               style={[
                                 styles.checkbox,
-                                productState?.checked && styles.checkboxChecked,
+                                sellerState.checked && styles.checkboxChecked,
                               ]}
                             >
-                              {productState?.checked && (
+                              {sellerState.checked && (
                                 <Ionicons
                                   name="checkmark"
                                   size={14}
@@ -266,61 +568,347 @@ export default function CartPage() {
                               )}
                             </View>
                           </Pressable>
-                          <Image
-                            source={{ uri: product.image }}
-                            style={[
-                              styles.productImage,
-                              isTablet && styles.productImageTablet,
-                            ]}
-                            contentFit="cover"
-                          />
-                          <Pressable
-                            style={styles.productInfo}
-                            onPress={() =>
-                              router.push({
-                                pathname: "/product/[id]",
-                                params: { id: product.id },
-                              })
-                            }
-                          >
-                            <Text
+                          <Text style={styles.sellerName}>{seller.name}</Text>
+                        </View>
+
+                        {seller.products.map((product) => {
+                          const productState = sellerState.products.find(
+                            (p) => p.productId === product.id
+                          );
+                          if (!productState) return null;
+
+                          return (
+                            <View
+                              key={product.id}
                               style={[
-                                styles.productTitle,
-                                isTablet && styles.productTitleTablet,
+                                styles.cartCard,
+                                isTablet && styles.cartCardTablet,
                               ]}
                             >
-                              {product.name}
-                            </Text>
-                            <Text style={styles.productDesc}>
-                              Lorem ipsum lorem ipsum lorem ipsum lorem ipsum
-                            </Text>
-                            <View style={styles.priceContainer}>
-                              <Text
-                                style={[
-                                  styles.productPrice,
-                                  isTablet && styles.productPriceTablet,
-                                ]}
+                              <Pressable
+                                onPress={() =>
+                                  handleProductToggle(seller.id, product.id)
+                                }
+                                style={styles.checkboxContainer}
                               >
-                                ${product.price.toFixed(2)}
-                              </Text>
-                              <Text style={styles.oldPrice}>
-                                ${product.oldPrice.toFixed(2)}
-                              </Text>
+                                <View
+                                  style={[
+                                    styles.checkbox,
+                                    productState.checked &&
+                                      styles.checkboxChecked,
+                                  ]}
+                                >
+                                  {productState.checked && (
+                                    <Ionicons
+                                      name="checkmark"
+                                      size={14}
+                                      color={colors.white}
+                                    />
+                                  )}
+                                </View>
+                              </Pressable>
+                              <Image
+                                source={{ uri: product.image }}
+                                style={[
+                                  styles.productImage,
+                                  isTablet && styles.productImageTablet,
+                                ]}
+                                contentFit="cover"
+                              />
+                              <Pressable
+                                style={styles.productInfo}
+                                onPress={() =>
+                                  router.push({
+                                    pathname: "/product/[id]",
+                                    params: { id: product.productId },
+                                  })
+                                }
+                              >
+                                <Text
+                                  style={[
+                                    styles.productTitle,
+                                    isTablet && styles.productTitleTablet,
+                                  ]}
+                                >
+                                  {product.name}
+                                </Text>
+                                <Text style={styles.productDesc}>
+                                  Size: {product.size}
+                                </Text>
+                                <View style={styles.priceContainer}>
+                                  <Text
+                                    style={[
+                                      styles.productPrice,
+                                      isTablet && styles.productPriceTablet,
+                                    ]}
+                                  >
+                                    ${product.price.toFixed(2)}
+                                  </Text>
+                                </View>
+                                <View style={styles.quantityContainer}>
+                                  <Pressable
+                                    style={styles.quantityButton}
+                                    onPress={() =>
+                                      handleQuantityChange(product.id, -1)
+                                    }
+                                  >
+                                    <Ionicons
+                                      name="remove"
+                                      size={16}
+                                      color={colors.text}
+                                    />
+                                  </Pressable>
+                                  <Text style={styles.quantityText}>
+                                    {product.quantity}
+                                  </Text>
+                                  <Pressable
+                                    style={styles.quantityButton}
+                                    onPress={() =>
+                                      handleQuantityChange(product.id, 1)
+                                    }
+                                  >
+                                    <Ionicons
+                                      name="add"
+                                      size={16}
+                                      color={colors.text}
+                                    />
+                                  </Pressable>
+                                </View>
+                              </Pressable>
+                              <Pressable
+                                style={styles.deleteButton}
+                                onPress={() =>
+                                  handleDeleteProduct(seller.id, product.id)
+                                }
+                              >
+                                <Ionicons
+                                  name="trash-outline"
+                                  size={isTablet ? 22 : 18}
+                                  color={colors.error}
+                                />
+                              </Pressable>
                             </View>
-                          </Pressable>
-                          <Pressable style={styles.deleteButton}>
-                            <Ionicons
-                              name="trash-outline"
-                              size={isTablet ? 22 : 18}
-                              color={colors.gray}
+                          );
+                        })}
+                      </View>
+                    );
+                  })}
+                </>
+              )}
+
+              {(currentStep === "place-order" || currentStep === "pay") && (
+                <>
+                  {/* Back button */}
+                  <Pressable
+                    style={styles.backButton}
+                    onPress={
+                      currentStep === "place-order"
+                        ? handleBackToCart
+                        : handleBackToShipping
+                    }
+                  >
+                    <Ionicons name="arrow-back" size={20} color={colors.text} />
+                    <Text style={styles.backButtonText}>Back</Text>
+                  </Pressable>
+
+                  {/* Address Section */}
+                  <View style={[styles.sellerSection, styles.paddingCart]}>
+                    <Text style={styles.sectionTitle}>Delivery Address</Text>
+                    <View
+                      style={[
+                        styles.pickupAddress,
+                        !useSideBySideLayout && styles.pickupAddressStacked,
+                      ]}
+                    >
+                      <View style={styles.addressInfo}>
+                        {isEditing ? (
+                          <>
+                            <TextInput
+                              style={styles.input}
+                              value={address.name}
+                              onChangeText={(text) =>
+                                setAddress({ ...address, name: text })
+                              }
+                              placeholder="Full Name"
                             />
-                          </Pressable>
-                        </View>
-                      );
-                    })}
+                            <TextInput
+                              style={styles.input}
+                              value={address.phone}
+                              onChangeText={(text) =>
+                                setAddress({ ...address, phone: text })
+                              }
+                              placeholder="Phone Number"
+                              keyboardType="phone-pad"
+                            />
+                            <TextInput
+                              style={styles.input}
+                              value={address.email}
+                              onChangeText={(text) =>
+                                setAddress({ ...address, email: text })
+                              }
+                              placeholder="Email"
+                              keyboardType="email-address"
+                            />
+                            <TextInput
+                              style={styles.input}
+                              value={address.deliveryPoint}
+                              onChangeText={(text) =>
+                                setAddress({ ...address, deliveryPoint: text })
+                              }
+                              placeholder="Delivery Point"
+                            />
+                            <TextInput
+                              style={styles.input}
+                              value={address.address}
+                              onChangeText={(text) =>
+                                setAddress({ ...address, address: text })
+                              }
+                              placeholder="Street Address"
+                            />
+                            <View style={styles.addressRow}>
+                              <TextInput
+                                style={[styles.input, styles.halfInput]}
+                                value={address.city}
+                                onChangeText={(text) =>
+                                  setAddress({ ...address, city: text })
+                                }
+                                placeholder="City"
+                              />
+                              <TextInput
+                                style={[styles.input, styles.halfInput]}
+                                value={address.postalCode}
+                                onChangeText={(text) =>
+                                  setAddress({ ...address, postalCode: text })
+                                }
+                                placeholder="Postal Code"
+                              />
+                            </View>
+                            <TextInput
+                              style={styles.input}
+                              value={address.country}
+                              onChangeText={(text) =>
+                                setAddress({ ...address, country: text })
+                              }
+                              placeholder="Country"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <Text style={styles.addressText}>
+                              {address.name}
+                            </Text>
+                            <Text style={styles.addressText}>
+                              {address.phone}
+                            </Text>
+                            <Text style={styles.addressText}>
+                              {address.email}
+                            </Text>
+                            <Text style={styles.addressLabel}>
+                              Delivery Point:
+                            </Text>
+                            <Text style={styles.addressText}>
+                              {address.deliveryPoint}
+                            </Text>
+                            <Text style={styles.addressLabel}>Address:</Text>
+                            <Text style={styles.addressText}>
+                              {address.address}
+                            </Text>
+                            <Text style={styles.addressText}>
+                              {address.city}, {address.postalCode}
+                            </Text>
+                            <Text style={styles.addressText}>
+                              {address.country}
+                            </Text>
+                          </>
+                        )}
+                      </View>
+                      <Pressable
+                        style={styles.editAddress}
+                        onPress={
+                          isEditing
+                            ? handleSaveAddress
+                            : () => setIsEditing(true)
+                        }
+                      >
+                        <Text style={styles.editAddressText}>
+                          {isEditing ? "Save" : "Edit"}
+                        </Text>
+                      </Pressable>
+                    </View>
                   </View>
-                );
-              })}
+
+                  {/* Shipping Methods */}
+                  {currentStep === "place-order" && (
+                    <View style={[styles.sellerSection, styles.paddingCart]}>
+                      <Text style={styles.sectionTitle}>Shipping Method</Text>
+                      {shippingMethods.map((method) => (
+                        <Pressable
+                          key={method.id}
+                          style={[
+                            styles.shippingMethod,
+                            selectedShipping === method.id && styles.selected,
+                          ]}
+                          onPress={() => setSelectedShipping(method.id)}
+                        >
+                          <View style={styles.radioOuter}>
+                            {selectedShipping === method.id && (
+                              <View style={styles.radioInner} />
+                            )}
+                          </View>
+                          <View style={styles.shippingInfo}>
+                            <Text style={styles.shippingName}>
+                              {method.name}
+                            </Text>
+                            <Text style={styles.shippingDetails}>
+                              {method.price.toFixed(2)}zł - {method.description}
+                            </Text>
+                            <Text style={styles.shippingDelivery}>
+                              {method.deliveryDays}
+                            </Text>
+                          </View>
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Payment Methods */}
+                  {currentStep === "pay" && (
+                    <View style={[styles.sellerSection, styles.paddingCart]}>
+                      <Text style={styles.sectionTitle}>Payment Method</Text>
+                      {paymentMethods.map((method) => (
+                        <Pressable
+                          key={method.id}
+                          style={[
+                            styles.shippingMethod,
+                            selectedPayment === method.id && styles.selected,
+                          ]}
+                          onPress={() => setSelectedPayment(method.id)}
+                        >
+                          <View style={styles.radioOuter}>
+                            {selectedPayment === method.id && (
+                              <View style={styles.radioInner} />
+                            )}
+                          </View>
+                          <Ionicons
+                            name={method.icon as any}
+                            size={24}
+                            color={colors.text}
+                            style={styles.paymentIcon}
+                          />
+                          <View style={styles.shippingInfo}>
+                            <Text style={styles.shippingName}>
+                              {method.name}
+                            </Text>
+                            <Text style={styles.shippingDetails}>
+                              {method.description}
+                            </Text>
+                          </View>
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+                </>
+              )}
             </View>
 
             {/* Order Summary */}
@@ -332,53 +920,110 @@ export default function CartPage() {
               ]}
             >
               <Text style={styles.summaryTitle}>Order Summary</Text>
+
+              {/* Selected Products Preview */}
               <View style={styles.previewImages}>
-                {sellers
-                  .flatMap((s) => s.products)
-                  .slice(0, 4)
-                  .map((product, i) => (
-                    <View key={i} style={styles.previewWrapper}>
-                      <Image
-                        source={{ uri: product.image }}
-                        style={styles.previewImage}
-                        contentFit="cover"
-                      />
-                      {i === 3 &&
-                        sellers.flatMap((s) => s.products).length > 4 && (
-                          <View style={styles.overlay}>
-                            <Text style={styles.overlayText}>
-                              +{sellers.flatMap((s) => s.products).length - 4}
-                            </Text>
-                          </View>
-                        )}
+                {selectedProducts.slice(0, 4).map((product, i) => (
+                  <View key={i} style={styles.previewWrapper}>
+                    <Image
+                      source={{ uri: product.image }}
+                      style={styles.previewImage}
+                      contentFit="cover"
+                    />
+                    {product.quantity > 1 && (
+                      <View style={styles.quantityBadge}>
+                        <Text style={styles.quantityBadgeText}>
+                          ×{product.quantity}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+                {selectedProducts.length > 4 && (
+                  <View style={styles.previewWrapper}>
+                    <View style={styles.moreItemsOverlay}>
+                      <Text style={styles.moreItemsText}>
+                        +{selectedProducts.length - 4}
+                      </Text>
+                      <Text style={styles.moreItemsSubText}>more items</Text>
                     </View>
-                  ))}
+                  </View>
+                )}
               </View>
 
               <View style={styles.summaryDetails}>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.labelLowest}>Lowest price:</Text>
-                  <Text style={styles.valueLowest}>$2345.00</Text>
-                </View>
-                <View style={[styles.summaryRow, styles.discountBorder]}>
-                  <Text style={styles.labelDiscount}>Discount amount:</Text>
-                  <Text style={styles.valueDiscount}>$99.00</Text>
+                  <Text style={styles.label}>
+                    Subtotal ({selectedProducts.length} items):
+                  </Text>
+                  <Text style={styles.value}>${subtotal.toFixed(2)}</Text>
                 </View>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.labelTotal}>Total:</Text>
-                  <Text style={styles.valueTotal}>$2246.00</Text>
+                  <Text style={styles.label}>Discount:</Text>
+                  <Text style={[styles.value, styles.discountValue]}>
+                    -${discount.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.label}>Shipping:</Text>
+                  <Text style={styles.value}>${shipping.toFixed(2)}</Text>
+                </View>
+                <View style={[styles.summaryRow, styles.totalRow]}>
+                  <Text style={styles.totalLabel}>Total:</Text>
+                  <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
                 </View>
               </View>
 
-              <Pressable
-                style={styles.checkoutButton}
-                onPress={() => setCheckoutComplete(true)}
-              >
-                <Ionicons name="cart-outline" size={18} color={colors.white} />
-                <Text style={styles.checkoutButtonText}>Checkout</Text>
-              </Pressable>
+              {currentStep === "cart" && (
+                <Pressable
+                  style={[
+                    styles.checkoutButton,
+                    selectedProducts.length === 0 &&
+                      styles.checkoutButtonDisabled,
+                  ]}
+                  onPress={handleCheckout}
+                  disabled={selectedProducts.length === 0}
+                >
+                  <Ionicons
+                    name="cart-outline"
+                    size={18}
+                    color={colors.white}
+                  />
+                  <Text style={styles.checkoutButtonText}>
+                    Checkout ({selectedProducts.length})
+                  </Text>
+                </Pressable>
+              )}
 
-              <Text style={styles.acceptingText}>Accepting</Text>
+              {currentStep === "place-order" && (
+                <Pressable
+                  style={styles.checkoutButton}
+                  onPress={handlePlaceOrder}
+                >
+                  <Ionicons
+                    name="arrow-forward"
+                    size={18}
+                    color={colors.white}
+                  />
+                  <Text style={styles.checkoutButtonText}>
+                    Continue to Payment
+                  </Text>
+                </Pressable>
+              )}
+
+              {currentStep === "pay" && (
+                <Pressable
+                  style={styles.checkoutButton}
+                  onPress={handlePayment}
+                >
+                  <Ionicons name="lock-closed" size={18} color={colors.white} />
+                  <Text style={styles.checkoutButtonText}>
+                    Pay ${total.toFixed(2)}
+                  </Text>
+                </Pressable>
+              )}
+
+              <Text style={styles.acceptingText}>We Accept</Text>
               <View style={styles.paymentMethods}>
                 <Image
                   source={{
@@ -404,144 +1049,6 @@ export default function CartPage() {
               </View>
             </View>
           </View>
-        ) : (
-          /* Checkout Complete View */
-          <View
-            style={[
-              styles.cartAll,
-              useSideBySideLayout && styles.cartAllSideBySide,
-              !useSideBySideLayout && styles.cartAllStacked,
-            ]}
-          >
-            <View
-              style={[
-                styles.cartMain,
-                useSideBySideLayout && { flex: cartMainFlex },
-              ]}
-            >
-              {/* Address Section */}
-              <View style={[styles.sellerSection, styles.paddingCart]}>
-                <Text style={styles.acceptingText}>Pickup Address</Text>
-                <View
-                  style={[
-                    styles.pickupAddress,
-                    !useSideBySideLayout && styles.pickupAddressStacked,
-                  ]}
-                >
-                  <View style={styles.addressInfo}>
-                    {isEditing ? (
-                      <>
-                        <TextInput
-                          style={styles.input}
-                          value={address.name}
-                          onChangeText={(text) =>
-                            setAddress({ ...address, name: text })
-                          }
-                          placeholder="Name"
-                        />
-                        <TextInput
-                          style={styles.input}
-                          value={address.phone}
-                          onChangeText={(text) =>
-                            setAddress({ ...address, phone: text })
-                          }
-                          placeholder="Phone"
-                        />
-                        <TextInput
-                          style={styles.input}
-                          value={address.email}
-                          onChangeText={(text) =>
-                            setAddress({ ...address, email: text })
-                          }
-                          placeholder="Email"
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <Text style={styles.addressText}>{address.name}</Text>
-                        <Text style={styles.addressText}>{address.phone}</Text>
-                        <Text style={styles.addressText}>{address.email}</Text>
-                        <Text style={styles.addressText}>
-                          {address.deliveryPoint}
-                        </Text>
-                        <Text style={styles.addressText}>
-                          {address.address}
-                        </Text>
-                      </>
-                    )}
-                  </View>
-                  <Pressable
-                    style={styles.editAddress}
-                    onPress={() => setIsEditing(!isEditing)}
-                  >
-                    <Text style={styles.editAddressText}>
-                      {isEditing ? "Save" : "Edit"}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-
-              {/* Shipping Methods */}
-              <View style={[styles.sellerSection, styles.paddingCart]}>
-                <Text style={styles.acceptingText}>Shipping Method</Text>
-                {[0, 1, 2].map((index) => (
-                  <Pressable
-                    key={index}
-                    style={[
-                      styles.shippingMethod,
-                      selectedShipping === `method-${index}` && styles.selected,
-                    ]}
-                    onPress={() => setSelectedShipping(`method-${index}`)}
-                  >
-                    <View style={styles.radioOuter}>
-                      {selectedShipping === `method-${index}` && (
-                        <View style={styles.radioInner} />
-                      )}
-                    </View>
-                    <View style={styles.shippingInfo}>
-                      <Text style={styles.shippingName}>
-                        InPost Paczkomat 24/7
-                      </Text>
-                      <Text style={styles.shippingDetails}>
-                        9,90zł (Dostarczenie między Poniedziałek, Kwi 7 – Środa,
-                        Kwi 9.)
-                      </Text>
-                    </View>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            {/* Order Summary - Checkout */}
-            <View
-              style={[
-                styles.orderSummary,
-                useSideBySideLayout && { flex: orderSummaryFlex },
-                !useSideBySideLayout && styles.orderSummaryStacked,
-              ]}
-            >
-              <Text style={styles.summaryTitle}>Order Summary</Text>
-              <View style={styles.summaryDetails}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.labelLowest}>Lowest price:</Text>
-                  <Text style={styles.valueLowest}>$2345.00</Text>
-                </View>
-                <View style={[styles.summaryRow, styles.discountBorder]}>
-                  <Text style={styles.labelDiscount}>Discount amount:</Text>
-                  <Text style={styles.valueDiscount}>$99.00</Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.labelTotal}>Total:</Text>
-                  <Text style={styles.valueTotal}>$2246.00</Text>
-                </View>
-              </View>
-
-              <Pressable style={styles.checkoutButton}>
-                <Ionicons name="cart-outline" size={18} color={colors.white} />
-                <Text style={styles.checkoutButtonText}>Pay</Text>
-              </Pressable>
-            </View>
-          </View>
         )}
       </ScrollView>
     </View>
@@ -553,6 +1060,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  emptyCartContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: spacing.xl,
+  },
+  emptyCartTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: colors.text,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  emptyCartText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginBottom: spacing.xl,
+  },
   scrollView: {
     flex: 1,
   },
@@ -562,12 +1088,38 @@ const styles = StyleSheet.create({
   scrollContentTablet: {
     paddingHorizontal: spacing.xl,
   },
-  breadcrumb: {
-    fontSize: 16,
-    fontWeight: "700",
-    textAlign: "center",
+  breadcrumbContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginVertical: spacing.md,
-    color: colors.text,
+    paddingHorizontal: spacing.md,
+    flexWrap: "wrap",
+  },
+  breadcrumbStep: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginHorizontal: spacing.xs,
+  },
+  breadcrumbStepActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  breadcrumbStepCompleted: {
+    backgroundColor: colors.successLight,
+    borderColor: colors.success,
+  },
+  breadcrumbText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  breadcrumbTextActive: {
+    color: colors.white,
   },
   cartAll: {
     paddingHorizontal: spacing.md,
@@ -687,6 +1239,7 @@ const styles = StyleSheet.create({
   priceContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: spacing.xs,
   },
   productPrice: {
     fontSize: 16,
@@ -701,6 +1254,27 @@ const styles = StyleSheet.create({
     textDecorationLine: "line-through",
     color: colors.textLight,
     marginLeft: spacing.sm,
+  },
+  quantityContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: spacing.xs,
+  },
+  quantityButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  quantityText: {
+    marginHorizontal: spacing.md,
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
   },
   deleteButton: {
     padding: spacing.sm,
@@ -742,21 +1316,41 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 5,
   },
-  overlay: {
+  quantityBadge: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    top: -5,
+    right: -5,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  quantityBadgeText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  moreItemsOverlay: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  overlayText: {
-    color: colors.white,
-    fontSize: 18,
+  moreItemsText: {
+    fontSize: 16,
     fontWeight: "700",
+    color: colors.text,
+  },
+  moreItemsSubText: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   summaryDetails: {
     marginBottom: spacing.md,
@@ -766,38 +1360,32 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: spacing.sm,
   },
-  labelLowest: {
+  totalRow: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  label: {
     fontSize: 14,
-    fontWeight: "700",
-    color: colors.black,
+    fontWeight: "500",
+    color: colors.text,
   },
-  valueLowest: {
+  value: {
     fontSize: 14,
-    fontWeight: "700",
-    color: colors.black,
-  },
-  labelDiscount: {
-    fontSize: 10,
     fontWeight: "500",
-    color: colors.textSecondary,
+    color: colors.text,
   },
-  valueDiscount: {
-    fontSize: 10,
-    fontWeight: "500",
-    color: colors.textSecondary,
+  discountValue: {
+    color: colors.success,
   },
-  discountBorder: {
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.border,
-  },
-  labelTotal: {
-    fontSize: 15,
+  totalLabel: {
+    fontSize: 16,
     fontWeight: "800",
     color: colors.black,
   },
-  valueTotal: {
-    fontSize: 15,
+  totalValue: {
+    fontSize: 16,
     fontWeight: "800",
     color: colors.black,
   },
@@ -810,23 +1398,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.xs,
   },
+  checkoutButtonDisabled: {
+    backgroundColor: colors.gray,
+    opacity: 0.6,
+  },
   checkoutButtonText: {
     color: colors.white,
     fontSize: 14,
     fontWeight: "700",
   },
   acceptingText: {
-    fontSize: 16,
-    fontWeight: "800",
+    fontSize: 14,
+    fontWeight: "600",
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
-    color: colors.text,
+    color: colors.textSecondary,
+    textAlign: "center",
   },
   paymentMethods: {
     flexDirection: "row",
     gap: spacing.sm,
     marginTop: spacing.sm,
     flexWrap: "wrap",
+    justifyContent: "center",
   },
   payIcon: {
     height: 24,
@@ -834,6 +1428,12 @@ const styles = StyleSheet.create({
   },
   paddingCart: {
     padding: spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: spacing.md,
+    color: colors.text,
   },
   pickupAddress: {
     flexDirection: "row",
@@ -852,19 +1452,33 @@ const styles = StyleSheet.create({
   addressInfo: {
     flex: 1,
   },
+  addressRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  addressLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+    marginBottom: 2,
+  },
   addressText: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.text,
     marginBottom: spacing.xs,
   },
   input: {
     backgroundColor: colors.white,
     padding: spacing.sm,
-    borderRadius: 15,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: spacing.sm,
     fontSize: 14,
+  },
+  halfInput: {
+    flex: 1,
   },
   editAddress: {
     backgroundColor: colors.white,
@@ -892,7 +1506,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   selected: {
-    borderColor: "#007bff",
+    borderColor: colors.primary,
     backgroundColor: "#f0f8ff",
   },
   radioOuter: {
@@ -923,5 +1537,87 @@ const styles = StyleSheet.create({
   shippingDetails: {
     fontSize: 12,
     color: colors.textSecondary,
+  },
+  shippingDelivery: {
+    fontSize: 11,
+    color: colors.textLight,
+    marginTop: 2,
+  },
+  paymentIcon: {
+    marginRight: spacing.sm,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: spacing.lg,
+    padding: spacing.sm,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+    marginLeft: spacing.xs,
+  },
+  completedContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.xl,
+    backgroundColor: colors.white,
+    margin: spacing.md,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  successIcon: {
+    marginBottom: spacing.lg,
+  },
+  completedTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlign: "center",
+  },
+  completedMessage: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginBottom: spacing.xl,
+    lineHeight: 22,
+  },
+  completedActions: {
+    flexDirection: "row",
+    gap: spacing.md,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  continueShoppingButton: {
+    backgroundColor: colors.black,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: 6,
+  },
+  continueShoppingText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  viewOrderButton: {
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  viewOrderText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
