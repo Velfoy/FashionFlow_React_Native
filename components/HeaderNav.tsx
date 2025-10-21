@@ -73,9 +73,7 @@ export default function HeaderNav({
             showLogo && (
               <Pressable onPress={() => router.push("/")}>
                 <Image
-                  source={{
-                    uri: "https://img.icons8.com/ios-glyphs/120/3B82F6/dove.png",
-                  }}
+                  source={require("@/assets/images/logo.png")}
                   style={[
                     styles.imageLogo,
                     isSmallDevice && styles.imageLogoSmall,
@@ -190,16 +188,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   imageLogo: {
-    height: 32,
-    width: 32,
+    height: 50,
+    width: 130,
   },
   imageLogoSmall: {
-    height: 28,
-    width: 28,
+    height: 50,
+    width: 130,
   },
   imageLogoTablet: {
-    height: 36,
-    width: 36,
+    height: 50,
+    width: 130,
   },
   backButton: {
     flexDirection: "row",
