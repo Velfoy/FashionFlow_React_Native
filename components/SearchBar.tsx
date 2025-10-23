@@ -663,259 +663,6 @@ export default function SearchBar({
     </View>
   );
 
-  // Filter modal content with tablet optimizations
-  const renderFilterModal = () => (
-    <Modal
-      visible={filterModalOpen}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setFilterModalOpen(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View
-          style={[
-            styles.filterModal,
-            isTablet && styles.filterModalTablet,
-            isLandscape && styles.filterModalLandscape,
-          ]}
-        >
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text
-              style={[styles.modalTitle, isTablet && styles.modalTitleTablet]}
-            >
-              Filters & Sorting
-            </Text>
-            <View style={styles.modalHeaderActions}>
-              <Pressable
-                onPress={clearFilters}
-                style={styles.clearFiltersButton}
-              >
-                <Text style={styles.clearFiltersText}>Clear All</Text>
-              </Pressable>
-              <Pressable onPress={() => setFilterModalOpen(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Content */}
-          <ScrollView
-            style={styles.filterContent}
-            contentContainerStyle={[
-              styles.filterContentContainer,
-              isTablet && styles.filterContentContainerTablet,
-            ]}
-            showsVerticalScrollIndicator={true}
-            alwaysBounceVertical={true}
-          >
-            {/* Price Range */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Price Range</Text>
-              <View
-                style={[
-                  styles.priceInputs,
-                  isTablet && styles.priceInputsTablet,
-                ]}
-              >
-                <View style={styles.priceInput}>
-                  <Text style={styles.priceLabel}>Min Price</Text>
-                  <TextInput
-                    style={styles.priceInputField}
-                    value={filters.minPrice}
-                    onChangeText={(text) =>
-                      setFilters((prev) => ({ ...prev, minPrice: text }))
-                    }
-                    placeholder="0"
-                    keyboardType="numeric"
-                  />
-                </View>
-                <View style={styles.priceInput}>
-                  <Text style={styles.priceLabel}>Max Price</Text>
-                  <TextInput
-                    style={styles.priceInputField}
-                    value={filters.maxPrice}
-                    onChangeText={(text) =>
-                      setFilters((prev) => ({ ...prev, maxPrice: text }))
-                    }
-                    placeholder="5000"
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-            </View>
-
-            {/* Rating Filter */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Rating</Text>
-              <View
-                style={[
-                  styles.ratingFilters,
-                  isTablet && styles.ratingFiltersTablet,
-                ]}
-              >
-                {ratings.map((rating) => (
-                  <Pressable
-                    key={rating}
-                    style={[
-                      styles.ratingFilter,
-                      isTablet && styles.ratingFilterTablet,
-                      filters.selectedRatings.includes(rating) &&
-                        styles.ratingFilterSelected,
-                    ]}
-                    onPress={() => toggleRating(rating)}
-                  >
-                    <Text
-                      style={[
-                        styles.ratingFilterText,
-                        isTablet && styles.ratingFilterTextTablet,
-                        filters.selectedRatings.includes(rating) &&
-                          styles.ratingFilterTextSelected,
-                      ]}
-                    >
-                      {"★".repeat(rating)} {rating}+
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            {/* Owner Filter */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Brand/Owner</Text>
-              <View
-                style={[
-                  styles.ownerFilters,
-                  isTablet && styles.ownerFiltersTablet,
-                ]}
-              >
-                {owners.map((owner) => (
-                  <Pressable
-                    key={owner}
-                    style={[
-                      styles.ownerFilter,
-                      isTablet && styles.ownerFilterTablet,
-                      filters.selectedOwners.includes(owner) &&
-                        styles.ownerFilterSelected,
-                    ]}
-                    onPress={() => toggleOwner(owner)}
-                  >
-                    <Text
-                      style={[
-                        styles.ownerFilterText,
-                        isTablet && styles.ownerFilterTextTablet,
-                        filters.selectedOwners.includes(owner) &&
-                          styles.ownerFilterTextSelected,
-                      ]}
-                    >
-                      {owner}
-                    </Text>
-                    {filters.selectedOwners.includes(owner) && (
-                      <Ionicons
-                        name="checkmark"
-                        size={16}
-                        color={colors.black}
-                      />
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            {/* Discount Filter */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Discounts</Text>
-              <Pressable
-                style={styles.checkboxFilter}
-                onPress={() =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    showOnlyDiscounted: !prev.showOnlyDiscounted,
-                  }))
-                }
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    filters.showOnlyDiscounted && styles.checkboxSelected,
-                  ]}
-                >
-                  {filters.showOnlyDiscounted && (
-                    <Ionicons name="checkmark" size={16} color={colors.white} />
-                  )}
-                </View>
-                <Text style={styles.checkboxLabel}>
-                  Show only discounted items
-                </Text>
-              </Pressable>
-            </View>
-
-            {/* Sort Options */}
-            <View style={styles.filterSection}>
-              <Text style={styles.filterSectionTitle}>Sort By</Text>
-              <View style={styles.sortOptions}>
-                {[
-                  { value: "relevance", label: "Relevance" },
-                  { value: "price-low", label: "Price: Low to High" },
-                  { value: "price-high", label: "Price: High to Low" },
-                  { value: "rating", label: "Highest Rated" },
-                  { value: "newest", label: "Newest" },
-                ].map((option) => (
-                  <Pressable
-                    key={option.value}
-                    style={[
-                      styles.sortOption,
-                      isTablet && styles.sortOptionTablet,
-                      filters.sortBy === option.value &&
-                        styles.sortOptionSelected,
-                    ]}
-                    onPress={() =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        sortBy: option.value as any,
-                      }))
-                    }
-                  >
-                    <View
-                      style={[
-                        styles.radio,
-                        filters.sortBy === option.value && styles.radioSelected,
-                      ]}
-                    >
-                      {filters.sortBy === option.value && (
-                        <View style={styles.radioInner} />
-                      )}
-                    </View>
-                    <Text
-                      style={[
-                        styles.sortOptionText,
-                        isTablet && styles.sortOptionTextTablet,
-                        filters.sortBy === option.value &&
-                          styles.sortOptionTextSelected,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          </ScrollView>
-
-          {/* Footer */}
-          <View style={styles.filterFooter}>
-            <Pressable
-              style={styles.applyFiltersButton}
-              onPress={() => setFilterModalOpen(false)}
-            >
-              <Text style={styles.applyFiltersText}>Apply Filters</Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-
   return (
     <View
       style={[
@@ -1069,6 +816,7 @@ export default function SearchBar({
         transparent
         animationType="fade"
         onRequestClose={() => setDropdownOpen(false)}
+        supportedOrientations={["portrait", "landscape"]}
       >
         <Pressable
           style={styles.modalOverlay}
@@ -1132,7 +880,264 @@ export default function SearchBar({
       </Modal>
 
       {/* Filter Modal */}
-      {renderFilterModal()}
+      <Modal
+        visible={filterModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFilterModalOpen(false)}
+        supportedOrientations={["portrait", "landscape"]}
+      >
+        <Pressable
+          style={styles.modalOverlayF}
+          onPress={() => setDropdownOpen(false)}
+        >
+          <View
+            style={[
+              styles.filterModal,
+              isTablet && styles.filterModalTablet,
+              isLandscape && styles.filterModalLandscape,
+            ]}
+          >
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <Text
+                style={[styles.modalTitle, isTablet && styles.modalTitleTablet]}
+              >
+                Filters & Sorting
+              </Text>
+              <View style={styles.modalHeaderActions}>
+                <Pressable
+                  onPress={clearFilters}
+                  style={styles.clearFiltersButton}
+                >
+                  <Text style={styles.clearFiltersText}>Clear All</Text>
+                </Pressable>
+                <Pressable onPress={() => setFilterModalOpen(false)}>
+                  <Ionicons name="close" size={24} color={colors.text} />
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Content */}
+            <ScrollView
+              style={styles.filterContent}
+              contentContainerStyle={[
+                styles.filterContentContainer,
+                isTablet && styles.filterContentContainerTablet,
+              ]}
+              showsVerticalScrollIndicator={true}
+              alwaysBounceVertical={true}
+            >
+              {/* Price Range */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Price Range</Text>
+                <View
+                  style={[
+                    styles.priceInputs,
+                    isTablet && styles.priceInputsTablet,
+                  ]}
+                >
+                  <View style={styles.priceInput}>
+                    <Text style={styles.priceLabel}>Min Price</Text>
+                    <TextInput
+                      style={styles.priceInputField}
+                      value={filters.minPrice}
+                      onChangeText={(text) =>
+                        setFilters((prev) => ({ ...prev, minPrice: text }))
+                      }
+                      placeholder="0"
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <View style={styles.priceInput}>
+                    <Text style={styles.priceLabel}>Max Price</Text>
+                    <TextInput
+                      style={styles.priceInputField}
+                      value={filters.maxPrice}
+                      onChangeText={(text) =>
+                        setFilters((prev) => ({ ...prev, maxPrice: text }))
+                      }
+                      placeholder="5000"
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* Rating Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Rating</Text>
+                <View
+                  style={[
+                    styles.ratingFilters,
+                    isTablet && styles.ratingFiltersTablet,
+                  ]}
+                >
+                  {ratings.map((rating) => (
+                    <Pressable
+                      key={rating}
+                      style={[
+                        styles.ratingFilter,
+                        isTablet && styles.ratingFilterTablet,
+                        filters.selectedRatings.includes(rating) &&
+                          styles.ratingFilterSelected,
+                      ]}
+                      onPress={() => toggleRating(rating)}
+                    >
+                      <Text
+                        style={[
+                          styles.ratingFilterText,
+                          isTablet && styles.ratingFilterTextTablet,
+                          filters.selectedRatings.includes(rating) &&
+                            styles.ratingFilterTextSelected,
+                        ]}
+                      >
+                        {"★".repeat(rating)} {rating}+
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {/* Owner Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Brand/Owner</Text>
+                <View
+                  style={[
+                    styles.ownerFilters,
+                    isTablet && styles.ownerFiltersTablet,
+                  ]}
+                >
+                  {owners.map((owner) => (
+                    <Pressable
+                      key={owner}
+                      style={[
+                        styles.ownerFilter,
+                        isTablet && styles.ownerFilterTablet,
+                        filters.selectedOwners.includes(owner) &&
+                          styles.ownerFilterSelected,
+                      ]}
+                      onPress={() => toggleOwner(owner)}
+                    >
+                      <Text
+                        style={[
+                          styles.ownerFilterText,
+                          isTablet && styles.ownerFilterTextTablet,
+                          filters.selectedOwners.includes(owner) &&
+                            styles.ownerFilterTextSelected,
+                        ]}
+                      >
+                        {owner}
+                      </Text>
+                      {filters.selectedOwners.includes(owner) && (
+                        <Ionicons
+                          name="checkmark"
+                          size={16}
+                          color={colors.black}
+                        />
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {/* Discount Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Discounts</Text>
+                <Pressable
+                  style={styles.checkboxFilter}
+                  onPress={() =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      showOnlyDiscounted: !prev.showOnlyDiscounted,
+                    }))
+                  }
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      filters.showOnlyDiscounted && styles.checkboxSelected,
+                    ]}
+                  >
+                    {filters.showOnlyDiscounted && (
+                      <Ionicons
+                        name="checkmark"
+                        size={16}
+                        color={colors.white}
+                      />
+                    )}
+                  </View>
+                  <Text style={styles.checkboxLabel}>
+                    Show only discounted items
+                  </Text>
+                </Pressable>
+              </View>
+
+              {/* Sort Options */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Sort By</Text>
+                <View style={styles.sortOptions}>
+                  {[
+                    { value: "relevance", label: "Relevance" },
+                    { value: "price-low", label: "Price: Low to High" },
+                    { value: "price-high", label: "Price: High to Low" },
+                    { value: "rating", label: "Highest Rated" },
+                    { value: "newest", label: "Newest" },
+                  ].map((option) => (
+                    <Pressable
+                      key={option.value}
+                      style={[
+                        styles.sortOption,
+                        isTablet && styles.sortOptionTablet,
+                        filters.sortBy === option.value &&
+                          styles.sortOptionSelected,
+                      ]}
+                      onPress={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          sortBy: option.value as any,
+                        }))
+                      }
+                    >
+                      <View
+                        style={[
+                          styles.radio,
+                          filters.sortBy === option.value &&
+                            styles.radioSelected,
+                        ]}
+                      >
+                        {filters.sortBy === option.value && (
+                          <View style={styles.radioInner} />
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          styles.sortOptionText,
+                          isTablet && styles.sortOptionTextTablet,
+                          filters.sortBy === option.value &&
+                            styles.sortOptionTextSelected,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Footer */}
+            <View style={styles.filterFooter}>
+              <Pressable
+                style={styles.applyFiltersButton}
+                onPress={() => setFilterModalOpen(false)}
+              >
+                <Text style={styles.applyFiltersText}>Apply Filters</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1443,6 +1448,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
   },
+  modalOverlayF: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+  },
   dropdownModal: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 20,
@@ -1456,6 +1466,10 @@ const styles = StyleSheet.create({
   },
   dropdownModalLandscape: {
     maxHeight: "80%",
+    alignSelf: "center",
+    width: "60%",
+    borderRadius: 20,
+    marginBottom: 20,
   },
   filterModal: {
     backgroundColor: colors.white,
@@ -1474,10 +1488,14 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 30,
     width: "80%",
     alignSelf: "center",
+    left: "17%",
   },
   filterModalLandscape: {
     maxHeight: "85%",
     width: "70%",
+    alignSelf: "center",
+    borderRadius: 20,
+    marginBottom: 20,
   },
   modalHeader: {
     flexDirection: "row",

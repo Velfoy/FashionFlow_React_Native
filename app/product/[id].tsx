@@ -1,4 +1,4 @@
-// app/product/[id].tsx - UPDATED VERSION WITH WORKING CART
+// app/product/[id].tsx - UPDATED VERSION WITH RATING IN COMMENTS AND EDIT/DELETE
 import HeaderNav from "@/components/HeaderNav";
 import { addToCart } from "@/data/mockData";
 import { useResponsive } from "@/hooks/useResponsive";
@@ -179,11 +179,13 @@ export default function ProductDetailPage() {
   const [popupOpen, setPopupOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [comment, setComment] = useState("");
+  const [userRating, setUserRating] = useState(5); // New state for user rating
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [product, setProduct] = useState<any>(null);
   const [productReviews, setProductReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [displayedReviewsCount, setDisplayedReviewsCount] = useState(5);
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null); // Track which review is being edited
 
   // Load product data based on ID
   useEffect(() => {
@@ -221,24 +223,83 @@ export default function ProductDetailPage() {
   const handleAddComment = () => {
     if (!comment.trim() || !product) return;
 
-    const newReview = {
-      id: Date.now(),
-      productId: product.id,
-      name: "You",
-      rating: 5,
-      text: comment,
-      date: new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }),
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&h=500&fit=crop",
-    };
+    if (editingReviewId) {
+      // Update existing review
+      setProductReviews((prev) =>
+        prev.map((review) =>
+          review.id === editingReviewId
+            ? {
+                ...review,
+                rating: userRating,
+                text: comment,
+                date: new Date().toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                }),
+              }
+            : review
+        )
+      );
+      Alert.alert("Success", "Your review has been updated!");
+    } else {
+      // Add new review
+      const newReview = {
+        id: Date.now(),
+        productId: product.id,
+        name: "You",
+        rating: userRating, // Use user's selected rating
+        text: comment,
+        date: new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        avatar:
+          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&h=500&fit=crop",
+      };
 
-    setProductReviews((prev) => [newReview, ...prev]);
+      setProductReviews((prev) => [newReview, ...prev]);
+      Alert.alert("Success", "Your review has been added!");
+    }
+
+    // Reset form
     setComment("");
-    Alert.alert("Success", "Your review has been added!");
+    setUserRating(5);
+    setEditingReviewId(null);
+    setOpenDropdown(null);
+  };
+
+  const handleEditReview = (review: any) => {
+    setComment(review.text);
+    setUserRating(review.rating);
+    setEditingReviewId(review.id);
+    setOpenDropdown(null);
+  };
+
+  const handleDeleteReview = (reviewId: number) => {
+    Alert.alert(
+      "Delete Review",
+      "Are you sure you want to delete this review?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            setProductReviews((prev) => prev.filter((r) => r.id !== reviewId));
+            setOpenDropdown(null);
+            Alert.alert("Success", "Your review has been deleted!");
+          },
+        },
+      ]
+    );
+  };
+
+  const cancelEdit = () => {
+    setComment("");
+    setUserRating(5);
+    setEditingReviewId(null);
   };
 
   const handleAddToCart = () => {
@@ -264,14 +325,14 @@ export default function ProductDetailPage() {
   const smallImageSize = isTablet ? 100 : 80;
   const bigImageWidth = isLandscape
     ? isTablet
-      ? screenWidth * 0.35
+      ? screenWidth * 0.4
       : screenWidth * 0.45
     : isTablet
     ? screenWidth * 0.5
     : screenWidth * 0.9;
   const bigImageHeight = isLandscape
     ? isTablet
-      ? 400
+      ? 440
       : 300
     : isTablet
     ? 500
@@ -324,6 +385,7 @@ export default function ProductDetailPage() {
             useVerticalLayout && styles.topDetailsVertical,
             isLandscape && styles.topDetailsLandscape,
             isTablet && styles.topDetailsTablet,
+            isLandscape && isTablet && styles.topDetailsTabletLandscape,
           ]}
         >
           {/* Images Section */}
@@ -332,6 +394,7 @@ export default function ProductDetailPage() {
               styles.detailsImages,
               useVerticalLayout && styles.detailsImagesVertical,
               isLandscape && !isTablet && styles.detailsImagesLandscapePhone,
+              isLandscape && isTablet && styles.detailsImagesTabletLandscape,
             ]}
           >
             {/* Small Images */}
@@ -343,6 +406,7 @@ export default function ProductDetailPage() {
                 styles.leftImages,
                 useVerticalLayout && styles.leftImagesHorizontal,
                 isLandscape && !isTablet && styles.leftImagesLandscapePhone,
+                isLandscape && isTablet && styles.leftImagesTabletLandscape,
               ]}
               contentContainerStyle={
                 useVerticalLayout && styles.leftImagesContent
@@ -380,6 +444,9 @@ export default function ProductDetailPage() {
                   isLandscape &&
                     !isTablet &&
                     styles.rightBigImageLandscapePhone,
+                  isLandscape &&
+                    isTablet &&
+                    styles.rightBigImageTabletLandscape,
                 ]}
               />
             </Pressable>
@@ -390,7 +457,7 @@ export default function ProductDetailPage() {
             style={[
               styles.cartDetails,
               isLandscape && !isTablet && styles.cartDetailsLandscapePhone,
-              isLandscape && isTablet && styles.cartDetailsLandscapeTablet,
+              isLandscape && isTablet && styles.cartDetailsTabletLandscape,
             ]}
           >
             <View style={styles.cartInfo}>
@@ -441,6 +508,7 @@ export default function ProductDetailPage() {
               style={[
                 styles.addToCart,
                 isLandscape && !isTablet && styles.addToCartLandscape,
+                isLandscape && isTablet && styles.addToCartTabletLandscape,
               ]}
             >
               <View style={styles.amountToAdd}>
@@ -493,7 +561,6 @@ export default function ProductDetailPage() {
             </View>
           </View>
         </View>
-
         {/* Second Details */}
         <View
           style={[styles.secondDetails, isTablet && styles.secondDetailsTablet]}
@@ -559,6 +626,29 @@ export default function ProductDetailPage() {
             </Pressable>
           </View>
 
+          {/* Star Rating Input */}
+          <View style={styles.ratingInputContainer}>
+            <Text style={styles.ratingLabel}>Your Rating:</Text>
+            <View style={styles.starRatingContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Pressable
+                  key={star}
+                  onPress={() => setUserRating(star)}
+                  style={styles.starButton}
+                >
+                  <Ionicons
+                    name={star <= userRating ? "star" : "star-outline"}
+                    size={28}
+                    color={
+                      star <= userRating ? "#FFD700" : colors.textSecondary
+                    }
+                  />
+                </Pressable>
+              ))}
+              <Text style={styles.ratingValue}>{userRating}.0</Text>
+            </View>
+          </View>
+
           <TextInput
             style={styles.commentInput}
             placeholder="Add your review..."
@@ -568,16 +658,27 @@ export default function ProductDetailPage() {
             numberOfLines={4}
           />
 
-          <Pressable
-            style={[
-              styles.submitCommentButton,
-              !comment.trim() && styles.submitCommentButtonDisabled,
-            ]}
-            onPress={handleAddComment}
-            disabled={!comment.trim()}
-          >
-            <Text style={styles.submitCommentButtonText}>Submit Review</Text>
-          </Pressable>
+          <View style={styles.commentActions}>
+            {editingReviewId && (
+              <Pressable style={styles.cancelEditButton} onPress={cancelEdit}>
+                <Text style={styles.cancelEditButtonText}>Cancel</Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={[
+                styles.submitCommentButton,
+                (!comment.trim() || userRating === 0) &&
+                  styles.submitCommentButtonDisabled,
+              ]}
+              onPress={handleAddComment}
+              disabled={!comment.trim() || userRating === 0}
+            >
+              <Text style={styles.submitCommentButtonText}>
+                {editingReviewId ? "Update Review" : "Submit Review"}{" "}
+                {userRating > 0 && `(${userRating}.0 ★)`}
+              </Text>
+            </Pressable>
+          </View>
 
           <Text style={styles.reviewsTitle}>
             {displayedReviews.length} reviews
@@ -591,6 +692,10 @@ export default function ProductDetailPage() {
                   <Text style={styles.commentName}>{review.name}</Text>
                   <Text style={styles.commentStars}>
                     {"★".repeat(review.rating)}
+                    <Text style={styles.commentRatingNumber}>
+                      {" "}
+                      {review.rating}.0
+                    </Text>
                   </Text>
                   {review.name === "You" && (
                     <Pressable
@@ -615,21 +720,13 @@ export default function ProductDetailPage() {
                   <View style={styles.dropdownMenu}>
                     <Pressable
                       style={styles.dropdownItem}
-                      onPress={() => {
-                        setComment(review.text);
-                        setOpenDropdown(null);
-                      }}
+                      onPress={() => handleEditReview(review)}
                     >
                       <Text>Edit</Text>
                     </Pressable>
                     <Pressable
                       style={styles.dropdownItem}
-                      onPress={() => {
-                        setProductReviews((prev) =>
-                          prev.filter((r) => r.id !== review.id)
-                        );
-                        setOpenDropdown(null);
-                      }}
+                      onPress={() => handleDeleteReview(review.id)}
                     >
                       <Text style={styles.deleteText}>Delete</Text>
                     </Pressable>
@@ -650,17 +747,34 @@ export default function ProductDetailPage() {
       </ScrollView>
 
       {/* Image Popup Modal */}
-      <Modal visible={popupOpen} transparent animationType="fade">
-        <View style={styles.imagePopupOverlay}>
+      <Modal
+        visible={popupOpen}
+        transparent
+        animationType="fade"
+        supportedOrientations={["portrait", "landscape"]}
+      >
+        <View
+          style={[
+            styles.imagePopupOverlay,
+            isLandscape && styles.imagePopupOverlayLandscape,
+          ]}
+        >
           <Pressable
-            style={styles.popupClose}
+            style={[
+              styles.popupClose,
+              isLandscape && styles.popupCloseLandscape,
+            ]}
             onPress={() => setPopupOpen(false)}
           >
             <Text style={styles.popupCloseText}>×</Text>
           </Pressable>
 
           <Pressable
-            style={[styles.popupArrow, styles.popupArrowLeft]}
+            style={[
+              styles.popupArrow,
+              styles.popupArrowLeft,
+              isLandscape && styles.popupArrowLeftLandscape,
+            ]}
             onPress={prevImage}
           >
             <Text style={styles.popupArrowText}>❮</Text>
@@ -671,20 +785,31 @@ export default function ProductDetailPage() {
             style={[
               styles.popupImage,
               {
-                width: screenWidth * 0.9,
-                height: screenWidth * 0.9,
+                width: isLandscape ? screenWidth * 0.6 : screenWidth * 0.9,
+                height: isLandscape ? screenWidth * 0.6 : screenWidth * 0.9,
+                maxWidth: isLandscape ? 600 : 400,
+                maxHeight: isLandscape ? 600 : 400,
               },
             ]}
           />
 
           <Pressable
-            style={[styles.popupArrow, styles.popupArrowRight]}
+            style={[
+              styles.popupArrow,
+              styles.popupArrowRight,
+              isLandscape && styles.popupArrowRightLandscape,
+            ]}
             onPress={nextImage}
           >
             <Text style={styles.popupArrowText}>❯</Text>
           </Pressable>
 
-          <Text style={styles.popupCounter}>
+          <Text
+            style={[
+              styles.popupCounter,
+              isLandscape && styles.popupCounterLandscape,
+            ]}
+          >
             {currentImageIndex + 1} / {product.images.length}
           </Text>
         </View>
@@ -1053,6 +1178,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+  // New rating input styles
+  ratingInputContainer: {
+    marginBottom: spacing.md,
+  },
+  ratingLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: spacing.sm,
+    color: colors.text,
+  },
+  starRatingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  starButton: {
+    padding: spacing.xs,
+  },
+  ratingValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+    marginLeft: spacing.md,
+  },
   commentInput: {
     backgroundColor: colors.white,
     borderWidth: 1,
@@ -1063,12 +1212,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: spacing.md,
   },
+  // Comment actions container
+  commentActions: {
+    flexDirection: "row",
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  cancelEditButton: {
+    backgroundColor: colors.gray,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 12,
+    alignItems: "center",
+    flex: 1,
+  },
+  cancelEditButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "600",
+  },
   submitCommentButton: {
     backgroundColor: colors.black,
     paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     borderRadius: 12,
     alignItems: "center",
-    marginBottom: spacing.lg,
+    flex: 2,
   },
   submitCommentButtonDisabled: {
     backgroundColor: colors.gray,
@@ -1111,6 +1280,10 @@ const styles = StyleSheet.create({
   commentStars: {
     fontSize: 15,
     color: colors.black,
+  },
+  commentRatingNumber: {
+    fontSize: 12,
+    color: colors.textSecondary,
   },
   commentText: {
     fontSize: 14,
@@ -1215,5 +1388,51 @@ const styles = StyleSheet.create({
   },
   rightBigImageLandscapePhone: {
     maxHeight: 200,
+  },
+  topDetailsTabletLandscape: {
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    minHeight: 500,
+  },
+  detailsImagesTabletLandscape: {
+    flex: 1,
+    alignSelf: "flex-start",
+  },
+  leftImagesTabletLandscape: {
+    display: "none",
+    alignSelf: "flex-start",
+  },
+  rightBigImageTabletLandscape: {
+    alignSelf: "flex-start",
+  },
+  cartDetailsTabletLandscape: {
+    flex: 1,
+    padding: spacing.xl,
+    alignSelf: "flex-start",
+  },
+  addToCartTabletLandscape: {
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  imagePopupOverlayLandscape: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  popupCloseLandscape: {
+    top: 20,
+    right: 20,
+  },
+  popupArrowLeftLandscape: {
+    left: 20,
+    top: "50%",
+  },
+  popupArrowRightLandscape: {
+    right: 20,
+    top: "50%",
+  },
+  popupCounterLandscape: {
+    top: 20,
+    left: 20,
   },
 });

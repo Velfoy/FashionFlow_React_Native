@@ -58,7 +58,13 @@ export default function RecommendedProducts() {
     <View style={styles.recommendedContainer}>
       <View style={styles.recommendedHeader}>
         <Text style={styles.headerTitle}>Recommended products</Text>
-        <Pressable>
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/products",
+            })
+          }
+        >
           <Text style={styles.allDeals}>All Products →</Text>
         </Pressable>
       </View>
